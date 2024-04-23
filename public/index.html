@@ -142,7 +142,7 @@
                             </div>
                         </div>
                         <hr />
-                        <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="testPush" style="width: 100%">PUSH!</button>
+                        <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="sendPush" style="width: 100%">PUSH!</button>
                     </details>
                     <p class="text-end"><span @click="pushState({ name: 'help' }, './#/help')" role="button" class="me-2">#help</span><span @click="pushState({ name: 'about' }, './#/about')" role="button">#about</span></p>
                 </div>
