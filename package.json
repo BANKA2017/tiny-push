@@ -1,0 +1,20 @@
+{
+    "name": "push",
+    "packageManager": "yarn@3.4.1",
+    "type": "module",
+    "dependencies": {
+        "@hono/node-server": "^1.10.0",
+        "axios": "^1.6.8",
+        "consola": "^3.2.3",
+        "crossws": "^0.2.4",
+        "hono": "^4.2.4",
+        "ioredis": "^5.4.1",
+        "jose": "^5.2.4",
+        "unws": "^0.2.4",
+        "ws": "^8.16.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.12.7",
+        "tsx": "^4.7.2"
+    }
+}
