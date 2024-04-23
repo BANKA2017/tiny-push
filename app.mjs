@@ -5,20 +5,34 @@
 
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
-//import { serveStatic } from 'hono/bun'
+// import { serveStatic } from 'hono/bun'
 import { Hono } from 'hono'
 import { showRoutes } from 'hono/dev'
 import log from './libs/console.mjs'
 import { readFileSync } from 'node:fs'
 import { base64_to_base64url, buffer_to_base64, BuildJWT, Encrypt, GetAESGCMNonceAndCekAndContent, GetPublicKey, Sign } from './libs/crypto.mjs'
 import { saveKV } from './libs/db.mjs'
-import { VAPID } from './db/vapid.mjs'
+import { VAPID as vapidObject } from './db/vapid.mjs'
 const apiTemplate = (code = 403, message = 'Invalid Request', data = {}, version = 'push') => {
     return { code, message, data, version }
 }
 
-let vapidObject = VAPID
-let kv = JSON.parse(readFileSync('./db/kv.json', 'utf-8'))
+const kvDBPath = './db/kv.json'
+
+log.info('', 'loading db from', kvDBPath)
+let kv = JSON.parse(readFileSync(kvDBPath, 'utf-8'))
+
+setInterval(async () => {
+    const now = Date.now()
+    const newKV = []
+    for (const kvItem of Object.entries(kv)) {
+        if (now - kvItem.last_used <= 1000 * 60 * 60 * 24 * 10) {
+            newKV.push(kvItem)
+        }
+    }
+    kv = Object.fromEntries(newKV)
+    await saveKV(kvDBPath, kv)
+}, 1000 * 60)
 
 const app = new Hono()
 
@@ -37,63 +51,68 @@ app.get('/vapid', async (c) => {
     )
 })
 
-app.put('/subscribe/:p256dh', async (c) => {
-    const p256dh = c.req.param('p256dh')
+app.put('/subscribe/', async (c) => {
+    const uuid = crypto.randomUUID()
 
     const query = await c.req.formData()
+    const p256dh = query.get('p256dh')
     const endpoint = query.get('endpoint')
     const auth = query.get('auth')
 
     if (!(p256dh && auth && endpoint)) {
-        return c.json(apiTemplate(401, 'Invalid p256dh/auth/endpoint', false))
+        return c.json(apiTemplate(401, 'Invalid p256dh/auth/endpoint', { uuid }))
     }
     try {
         new URL(endpoint).origin
     } catch (e) {
         log.error(e)
-        return c.json(apiTemplate(403, 'Invalid endpoint', false))
+        return c.json(apiTemplate(403, 'Invalid endpoint', { uuid }))
     }
 
-    kv[p256dh] = {
+    kv[uuid] = {
         endpoint,
         auth,
         p256dh,
+        uuid,
         last_used: Date.now(),
         count: 0
     }
 
     // log.log(kv)
 
-    await saveKV('./db/kv.json', kv)
+    await saveKV(kvDBPath, kv)
 
-    return c.json(apiTemplate(200, 'OK', true))
-}).delete('/subscribe/:p256dh', async (c) => {
-    const p256dh = c.req.param('p256dh')
-
-    const query = await c.req.formData()
-    const endpoint = query.get('endpoint')
-    const auth = query.get('auth')
-
-    if (kv[p256dh] && kv[p256dh].endpoint === endpoint && kv[p256dh].auth === auth) {
-        delete kv[p256dh]
-        await saveKV('./db/kv.json', kv)
+    return c.json(apiTemplate(200, 'OK', { uuid }))
+}).delete('/subscribe/:uuid', async (c) => {
+    const uuid = c.req.param('uuid')
+    if (kv[uuid]) {
+        delete kv[uuid]
+        await saveKV(kvDBPath, kv)
     }
     return c.json(apiTemplate(200, 'OK', true))
 })
 
-app.post('/push/:p256dh', async (c) => {
+app.post('/push/:uuid?', async (c) => {
+    const uuid = c.req.param('uuid')
+
     const query = await c.req.formData()
 
-    const p256dh = c.req.param('p256dh')
+    let p256dh = query.get('p256dh')
     let endpoint = query.get('endpoint')
-
     let auth = query.get('auth')
     let message = query.get('message')
 
     if (!(endpoint && p256dh && auth)) {
-        if (kv[p256dh]) {
-            endpoint = kv[p256dh].endpoint
-            auth = kv[p256dh].auth
+        if (kv[uuid]) {
+            p256dh = kv[uuid].p256dh
+            endpoint = kv[uuid].endpoint
+            auth = kv[uuid].auth
+
+            kv[uuid].count++
+            kv[uuid].last_used = Date.now()
+
+            await saveKV(kvDBPath, kv)
+
             message = query.get('message')
         } else {
             return c.json(apiTemplate(401, 'Invalid p256dh/auth/endpoint', false))
@@ -129,7 +148,7 @@ app.post('/push/:p256dh', async (c) => {
 
     const eccPublicKey = await crypto.subtle.exportKey('raw', eccKeyData.publicKey)
 
-    const content = message ? message : 'Hello, here is TinyPush(仮)! this is a test content\n\n now is ' + new Date() + ' ' + Date.now()
+    const content = message ? message : 'Hello, here is TinyPush!\n\nThis is a test content\n\n中日한🔔✅🎉😺1️⃣2️⃣3️⃣4️⃣5️⃣\n\n[a link?](https://push.nest.moe), or <https://push.nest.moe>\n\n' + new Date() + ' ' + Date.now()
     const sign = base64_to_base64url(buffer_to_base64(await Sign(vapidObject.key, new TextEncoder().encode(content))))
     //log.log(buffer_to_base64(nonce), buffer_to_base64(cek), buffer_to_base64(context), sign)
     const payload = new Uint8Array(await Encrypt(nonce, cek, new TextEncoder().encode(JSON.stringify({ content, sign, timestamp: Date.now() }))))
@@ -163,7 +182,7 @@ app.all('*', async (c) => {
     return c.json(apiTemplate())
 })
 
-const port = 3002
+const port = process.env.TINYPUSH_PORT || 3002
 log.info(` Hello Hono🔥`)
 log.info(` Server is running on port ${port}`)
 

@@ -21,6 +21,8 @@
 
     -   `sub`: your email
 
+-   Default port is `3002`, use env `TINYPUSH_PORT`
+
 ## then?
 
 ```shell

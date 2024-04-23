@@ -85,36 +85,48 @@
                     <p v-else-if="pushStatus === 'denied'" class="text-center">Please allow the browser to use notification.</p>
                     <p class="text-center" v-if="['granted', 'wait'].includes(pushStatus)">If on iOS, add this page to the Home Screen for it to work.</p>
                     <details v-if="['granted', 'wait'].includes(pushStatus)">
-                        <summary class="text-center">Key / Auth / VAPID</summary>
+                        <summary class="text-center">UUID / Key / Auth / VAPID</summary>
                         <div class="mb-3 mt-2">
-                            <label class="form-label" for="public-key">PublicKey</label>
+                            <label class="form-label" for="uuid">UUID</label>
                             <div class="input-group">
-                                <input id="public-key" type="text" class="form-control" :value="publicKey" />
+                                <input id="uuid" type="text" class="form-control" :value="uuid" />
                             </div>
                         </div>
                         <hr />
-                        <div class="mb-3">
-                            <label class="form-label" for="auth">Auth</label>
-                            <div class="input-group">
-                                <input id="auth" type="text" class="form-control" :value="auth" />
+
+                        <details>
+                            <summary class="text-center">MORE</summary>
+                            <div class="mb-3">
+                                <label class="form-label" for="vapid">VAPID</label>
+                                <div class="input-group">
+                                    <input id="vapid" type="text" class="form-control" :value="vapid" />
+                                </div>
+                                <div class="form-text" id="form-text-vapid">Public key for application</div>
                             </div>
-                        </div>
-                        <hr />
-                        <div class="mb-3">
-                            <label class="form-label" for="vapid">VAPID</label>
-                            <div class="input-group">
-                                <input id="vapid" type="text" class="form-control" :value="vapid" />
+                            <hr />
+                            <div class="mb-3">
+                                <label class="form-label" for="public-key">PublicKey</label>
+                                <div class="input-group">
+                                    <input id="public-key" type="text" class="form-control" :value="publicKey" />
+                                </div>
                             </div>
-                            <div class="form-text" id="form-text-vapid">Public key for application</div>
-                        </div>
-                        <hr />
-                        <div class="mb-3">
-                            <label class="form-label" for="endpoint">Endpoint</label>
-                            <div class="input-group">
-                                <input id="endpoint" type="text" class="form-control" :value="endpoint" />
+                            <hr />
+                            <div class="mb-3">
+                                <label class="form-label" for="auth">Auth</label>
+                                <div class="input-group">
+                                    <input id="auth" type="text" class="form-control" :value="auth" />
+                                </div>
                             </div>
-                        </div>
-                        <hr />
+                            <hr />
+                            <div class="mb-3">
+                                <label class="form-label" for="endpoint">Endpoint</label>
+                                <div class="input-group">
+                                    <input id="endpoint" type="text" class="form-control" :value="endpoint" />
+                                </div>
+                            </div>
+                            <hr />
+                        </details>
+
                         <div class="mb-3">
                             <label class="form-label" for="message">Message</label>
                             <div class="input-group">
@@ -140,6 +152,7 @@
                     publicKey: '',
                     auth: '',
                     endpoint: '',
+                    uuid: '',
                     message: {
                         content: '',
                         sign: '',
@@ -178,9 +191,10 @@
                 mounted: async function () {
                     this.updateNotifitionPermission()
                     this.subscribeStatus()
-                    this.publicKey = localStorage.getItem('push:public_key')
-                    this.auth = localStorage.getItem('push:auth')
-                    this.endpoint = localStorage.getItem('push:endpoint')
+                    this.publicKey = localStorage.getItem('push:public_key') || ''
+                    this.auth = localStorage.getItem('push:auth') || ''
+                    this.endpoint = localStorage.getItem('push:endpoint') || ''
+                    this.uuid = localStorage.getItem('push:uuid') || ''
                     if (window.location.hash === '#/about') {
                         this.showAbout()
                     }
@@ -258,22 +272,24 @@
                                     localStorage.setItem('push:public_key', this.publicKey)
                                     localStorage.setItem('push:auth', this.auth)
                                     localStorage.setItem('push:endpoint', this.endpoint)
-                                    fetch(endpoint + '/subscribe/' + this.publicKey, {
+                                    fetch(endpoint + '/subscribe/', {
                                         headers: {
                                             'content-type': 'application/x-www-form-urlencoded'
                                         },
                                         method: 'PUT',
                                         body: new URLSearchParams({
                                             endpoint: this.endpoint,
+                                            p256dh: this.publicKey,
                                             auth: this.auth
                                         }).toString()
                                     })
                                         .then((res) => res.json())
                                         .then((res) => {
-                                            console.log(res)
-                                        })
-                                        .catch((e) => {
-                                            console.error(res)
+                                            console.log(res, res.code, res.data)
+                                            if (res.code === 200) {
+                                                this.uuid = res.data.uuid
+                                                localStorage.setItem('push:uuid', this.uuid)
+                                            }
                                         })
                                 })
                         })
@@ -288,27 +304,26 @@
                                 .getSubscription()
                                 .then((subscription) => {
                                     subscription.unsubscribe().then((successful) => {
-                                        fetch(endpoint + '/subscribe/' + this.publicKey, {
-                                            headers: {
-                                                'content-type': 'application/x-www-form-urlencoded'
-                                            },
-                                            method: 'DELETE',
-                                            body: new URLSearchParams({
-                                                endpoint: this.endpoint,
-                                                auth: this.auth
-                                            }).toString()
-                                        })
-                                            .then((res) => res.json())
-                                            .then((res) => {
-                                                console.log(res)
+                                        if (this.uuid) {
+                                            fetch(endpoint + '/subscribe/' + this.uuid, {
+                                                headers: {
+                                                    'content-type': 'application/x-www-form-urlencoded'
+                                                },
+                                                method: 'DELETE'
                                             })
-                                            .catch((e) => {
-                                                console.error(res)
-                                            })
+                                                .then((res) => res.json())
+                                                .then((res) => {
+                                                    console.log(res)
+                                                })
+                                                .catch((e) => {
+                                                    console.error(res)
+                                                })
+                                        }
                                     })
                                     localStorage.removeItem('push:public_key')
                                     localStorage.removeItem('push:auth')
                                     localStorage.removeItem('push:endpoint')
+                                    localStorage.removeItem('push:uuid')
                                     this.publicKey = ''
                                     this.auth = ''
                                     this.endpoint = ''
@@ -343,13 +358,14 @@
                         history.pushState({}, document.title, '.')
                     },
                     testPush: function () {
-                        fetch(endpoint + '/push/' + this.publicKey, {
+                        fetch(endpoint + '/push/' + this.uuid, {
                             headers: {
                                 'content-type': 'application/x-www-form-urlencoded'
                             },
                             method: 'POST',
                             body: new URLSearchParams({
                                 endpoint: this.endpoint,
+                                p256dh: this.publicKey,
                                 auth: this.auth,
                                 message: this.test_message
                             }).toString()
@@ -371,7 +387,7 @@
                     showAbout: function () {
                         history.pushState({}, document.title, './#/about')
                         this.message = {
-                            content: `🔔TinyPush is a tiny tool to push content via WebPush 🚀\n\n① Click on text to display original text\n\n② An ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n③ Click \`Key / Auth / VAPID\` on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\nTo learn more, please visit [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push) ↗️`,
+                            content: `🔔TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ An ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click \`UUID / Key / Auth / VAPID\` on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\nTo learn more, please visit [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push) ↗️`,
                             sign: 'build-in',
                             verify: true
                         }
