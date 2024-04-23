@@ -54,7 +54,12 @@ app.get('/vapid', async (c) => {
 app.put('/subscribe/', async (c) => {
     const uuid = crypto.randomUUID()
 
-    const query = await c.req.formData()
+    let query = new Map()
+    try {
+        query = await c.req.formData()
+    } catch {
+        return c.json(apiTemplate(401, 'Invalid p256dh/auth/endpoint', { uuid }))
+    }
     const p256dh = query.get('p256dh')
     const endpoint = query.get('endpoint')
     const auth = query.get('auth')
@@ -95,7 +100,10 @@ app.put('/subscribe/', async (c) => {
 app.post('/push/:uuid?', async (c) => {
     const uuid = c.req.param('uuid')
 
-    const query = await c.req.formData()
+    let query = new Map()
+    try {
+        query = await c.req.formData()
+    } catch {}
 
     let p256dh = query.get('p256dh')
     let endpoint = query.get('endpoint')
