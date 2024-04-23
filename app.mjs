@@ -108,7 +108,7 @@ app.post('/push/:uuid?', async (c) => {
     let p256dh = query.get('p256dh')
     let endpoint = query.get('endpoint')
     let auth = query.get('auth')
-    let message = query.get('message')
+    let message = query.get('message') || ''
 
     if (!(endpoint && p256dh && auth)) {
         if (kv[uuid]) {
@@ -120,8 +120,6 @@ app.post('/push/:uuid?', async (c) => {
             kv[uuid].last_used = Date.now()
 
             await saveKV(kvDBPath, kv)
-
-            message = query.get('message')
         } else {
             return c.json(apiTemplate(401, 'Invalid p256dh/auth/endpoint', false))
         }
