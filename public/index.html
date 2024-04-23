@@ -7,17 +7,24 @@
         <meta name="author" content="Banka2017 (https://nest.moe)" />
         <meta name="description" content="TinyPush" />
         <meta name="theme-color" content="#212529" />
+        <link rel="apple-touch-icon" href="/icon.png">
+        <link rel="icon" href="/icon.png">
         <link rel="manifest" href="/manifest.webmanifest" />
         <title>TinyPush</title>
         <!-- CSS only -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+        <style>
+            a::after {
+                content: ' ↗';
+            }
+        </style>
     </head>
 
     <body style="display: flex; justify-content: center; height: 90vh; margin: 20px; flex-direction: column">
         <div id="app" class="d-flex justify-content-center" style="overflow-y: auto">
-            <div style="max-width: 500px">
+            <div style="max-width: 600px">
                 <div v-if="message.content">
-                    <button class="btn btn-sm btn-danger" style="position: fixed; right: 2rem; top: 2rem; width: 3; height: 3rem" @click="cleanMessage">
+                    <button class="btn btn-sm btn-danger" style="position: fixed; right: 2rem; top: 2rem; width: 3; height: 3rem" @click="pushState({ name: 'main' }, '.')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
                             <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
                         </svg>
@@ -83,7 +90,7 @@
                     <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="unSubscribe" style="width: 100%">Unsubscribe</button>
                     <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.</p>
                     <p v-else-if="pushStatus === 'denied'" class="text-center">Please allow the browser to use notification.</p>
-                    <p class="text-center" v-if="['granted', 'wait', 'denied'].includes(pushStatus)">If on iOS, add this page to the Home Screen for it to work.</p>
+                    <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
                     <details v-if="['granted', 'wait'].includes(pushStatus)">
                         <summary class="text-center">UUID / Key / Auth / VAPID</summary>
                         <div class="mb-3 mt-2">
@@ -136,7 +143,7 @@
                         <hr />
                         <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="testPush" style="width: 100%">PUSH!</button>
                     </details>
-                    <p class="text-end"><span @click="showAbout" role="button">#about</span></p>
+                    <p class="text-end"><span @click="pushState({ name: 'help' }, './#/help')" role="button" class="me-2">#help</span><span @click="pushState({ name: 'about' }, './#/about')" role="button">#about</span></p>
                 </div>
             </div>
         </div>
@@ -159,7 +166,7 @@
                         verify: false,
                         timestamp: 0
                     },
-                    test_message: ''
+                    route: ['main']
                 }),
 
                 computed: {
@@ -187,6 +194,45 @@
                         }
                     }
                 },
+                watch: {
+                    async vapid(newVal, oldVal) {
+                        if (newVal != '' && this.route?.[0] === 'preview') {
+                            this.message.verify = await this.verifySign(this.message.content || '', this.message.sign || '')
+                        }
+                    },
+                    async route(newVal, oldVal) {
+                        if (newVal.length < 1) {
+                            return
+                        }
+                        switch (newVal[0]) {
+                            case 'preview':
+                                const hashContent = JSON.parse(atob(newVal[1]))
+                                const content = new TextDecoder('utf-8').decode(this.base64_to_buffer(this.base64url_to_base64(hashContent.content)))
+                                //console.log(hashContent, content)
+                                this.message = { content, sign: hashContent?.sign || '', verify: await this.verifySign(content, hashContent?.sign || ''), timestamp: Number(hashContent?.timestamp || 0) }
+                                break
+                            case 'about':
+                                this.message = {
+                                    content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click \`UUID / Key / Auth / VAPID\` on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ The currently supported markdown syntax is only links ( \`[]()\` or \`<>\` )\n\nTo learn more, please visit [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
+                                    sign: 'build-in',
+                                    verify: true
+                                }
+                                break
+                            case 'help':
+                                this.message = {
+                                    content: 'step by step\n\n\nuuid="" # Get the uuid from the target client\nmessage="" # What to push\ncurl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"\n',
+                                    sign: 'build-in',
+                                    verify: true
+                                }
+                            case 'import':
+                                break
+                            case 'main':
+                                this.message = { content: '', sign: '', verify: false, timestamp: 0 }
+                                break
+                        }
+                        //console.log(newVal, oldVal)
+                    }
+                },
 
                 mounted: async function () {
                     this.updateNotifitionPermission()
@@ -195,25 +241,38 @@
                     this.auth = localStorage.getItem('push:auth') || ''
                     this.endpoint = localStorage.getItem('push:endpoint') || ''
                     this.uuid = localStorage.getItem('push:uuid') || ''
-                    if (window.location.hash === '#/about') {
-                        this.showAbout()
-                    }
+
+                    this.routerCase(location.hash)
+                    addEventListener('popstate', (event) => {
+                        this.routerCase(event.target.location.hash)
+                    })
+
                     fetch(endpoint + '/vapid')
                         .then((res) => res.json())
                         .then(async (res) => {
                             this.vapid = res.data.vapid
-                            if (window.location.hash && window.location.hash.length > 10 && window.location.hash.startsWith('#/preview/')) {
-                                const hashContent = JSON.parse(atob(window.location.hash.slice(10)))
-                                const content = new TextDecoder('utf-8').decode(this.base64_to_buffer(this.base64url_to_base64(hashContent.content)))
-                                //console.log(hashContent, content)
-                                this.message = { content, sign: hashContent?.sign || '', verify: await this.verifySign(content, hashContent?.sign || ''), timestamp: Number(hashContent?.timestamp || 0) }
-                            }
                         })
                         .catch((e) => {
                             console.error(e)
                         })
                 },
                 methods: {
+                    routerCase: function (to) {
+                        if (!to) {
+                            to = this.route = ['main']
+                            return
+                        }
+                        to = to.split('#')
+                        if (to.length < 2) {
+                            return // invalid path
+                        }
+                        to = to.slice(1).join('').split('/')
+                        if (!to[1]) {
+                            return // invalid path
+                        } else {
+                            this.route = to.slice(1)
+                        }
+                    },
                     updateNotifitionPermission: function () {
                         if (!('Notification' in window)) {
                             this.pushStatus = 'no'
@@ -285,7 +344,7 @@
                                     })
                                         .then((res) => res.json())
                                         .then((res) => {
-                                            console.log(res, res.code, res.data)
+                                            //console.log(res, res.code, res.data)
                                             if (res.code === 200) {
                                                 this.uuid = res.data.uuid
                                                 localStorage.setItem('push:uuid', this.uuid)
@@ -313,7 +372,7 @@
                                             })
                                                 .then((res) => res.json())
                                                 .then((res) => {
-                                                    console.log(res)
+                                                    //console.log(res)
                                                 })
                                                 .catch((e) => {
                                                     console.error(res)
@@ -327,6 +386,7 @@
                                     this.publicKey = ''
                                     this.auth = ''
                                     this.endpoint = ''
+                                    this.uuid = ''
                                     this.pushStatus = 'wait'
                                 })
                                 .catch((e) => {
@@ -352,10 +412,6 @@
                             bytes[i] = binaryString.charCodeAt(i)
                         }
                         return bytes.buffer
-                    },
-                    cleanMessage: function () {
-                        this.message = { content: '', sign: '', verify: false, timestamp: 0 }
-                        history.pushState({}, document.title, '.')
                     },
                     testPush: function () {
                         fetch(endpoint + '/push/' + this.uuid, {
@@ -384,16 +440,8 @@
                             callback()
                         }
                     },
-                    showAbout: function () {
-                        history.pushState({}, document.title, './#/about')
-                        this.message = {
-                            content: `🔔TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ An ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click \`UUID / Key / Auth / VAPID\` on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\nTo learn more, please visit [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push) ↗️`,
-                            sign: 'build-in',
-                            verify: true
-                        }
-                    },
                     verifySign: async function (content = '', sign = '') {
-                        if (!sign) {
+                        if (!sign || !this.vapid) {
                             return false
                         }
                         const publicKey = await crypto.subtle.importKey(
@@ -473,6 +521,11 @@
                             }
                         }
                         return match
+                    },
+                    pushState: function (state = {}, url) {
+                        state = { ...state, url }
+                        history.pushState(state, '', url)
+                        dispatchEvent(new PopStateEvent('popstate', { state }))
                     }
                 }
             }).mount('#app')

@@ -156,7 +156,7 @@ app.post('/push/:uuid?', async (c) => {
 
     const eccPublicKey = await crypto.subtle.exportKey('raw', eccKeyData.publicKey)
 
-    const content = message ? message : 'Hello, here is TinyPush!\n\nThis is a test content\n\n中日한🔔✅🎉😺1️⃣2️⃣3️⃣4️⃣5️⃣\n\n[a link?](https://push.nest.moe), or <https://push.nest.moe>\n\n' + new Date() + ' ' + Date.now()
+    const content = message ? message : 'Hello, here is **TinyPush**!\n\nThis is a test content\n\n中日한🔔✅🎉😺1️⃣2️⃣3️⃣4️⃣5️⃣\n\n[a link](https://push.nest.moe)? or <https://push.nest.moe>\n\n' + new Date() + ' ' + Date.now()
     const sign = base64_to_base64url(buffer_to_base64(await Sign(vapidObject.key, new TextEncoder().encode(content))))
     //log.log(buffer_to_base64(nonce), buffer_to_base64(cek), buffer_to_base64(context), sign)
     const payload = new Uint8Array(await Encrypt(nonce, cek, new TextEncoder().encode(JSON.stringify({ content, sign, timestamp: Date.now() }))))
