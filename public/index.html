@@ -7,7 +7,8 @@
         <meta name="author" content="Banka2017 (https://nest.moe)" />
         <meta name="description" content="TinyPush" />
         <meta name="theme-color" content="#212529" />
-        <link rel="apple-touch-icon" href="/icon.png">
+        <link rel="apple-touch-icon" href="/icon.png" />
+        <link rel="icon" href="/icon.png" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <title>TinyPush</title>
         <!-- CSS only -->
@@ -95,7 +96,8 @@
                         <div class="mb-3 mt-2">
                             <label class="form-label" for="uuid">UUID</label>
                             <div class="input-group">
-                                <input id="uuid" type="text" class="form-control" :value="uuid" />
+                                <input id="uuid" type="text" class="form-control" v-model="uuid" aria-describedby="restore-uuid" />
+                                <button class="btn btn-secondary" type="button" id="restore-uuid" @click="restoreUUID">Restore</button>
                             </div>
                         </div>
                         <hr />
@@ -413,22 +415,25 @@
                         }
                         return bytes.buffer
                     },
-                    testPush: function () {
+                    sendPush: function () {
+                        if (!this.uuid) {
+                            return
+                        }
                         fetch(endpoint + '/push/' + this.uuid, {
                             headers: {
                                 'content-type': 'application/x-www-form-urlencoded'
                             },
                             method: 'POST',
                             body: new URLSearchParams({
-                                endpoint: this.endpoint,
-                                p256dh: this.publicKey,
-                                auth: this.auth,
+                                // endpoint: this.endpoint,
+                                // p256dh: this.publicKey,
+                                // auth: this.auth,
                                 message: this.test_message
                             }).toString()
                         })
                             .then((res) => res.json())
                             .then((res) => {
-                                //console.log(res)
+                                console.log(res)
                             })
                             .catch((e) => {
                                 console.error(e)
@@ -526,6 +531,9 @@
                         state = { ...state, url }
                         history.pushState(state, '', url)
                         dispatchEvent(new PopStateEvent('popstate', { state }))
+                    },
+                    restoreUUID: function () {
+                        this.uuid = localStorage.getItem('push:uuid')
                     }
                 }
             }).mount('#app')
