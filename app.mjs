@@ -167,7 +167,7 @@ app.post('/push/:uuid?', async (c) => {
             method: 'POST',
             body: payload
         })
-        return c.json(apiTemplate(200, 'OK', response.status))
+        return c.json(apiTemplate(200, 'OK', { status: response.status, text: await response.text() }))
     } catch (e) {
         log.error(e)
         return c.json(apiTemplate(200, 'OK', 500))

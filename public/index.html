@@ -83,7 +83,7 @@
                     <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="unSubscribe" style="width: 100%">Unsubscribe</button>
                     <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.</p>
                     <p v-else-if="pushStatus === 'denied'" class="text-center">Please allow the browser to use notification.</p>
-                    <p class="text-center" v-if="['granted', 'wait'].includes(pushStatus)">If on iOS, add this page to the Home Screen for it to work.</p>
+                    <p class="text-center" v-if="['granted', 'wait', 'denied'].includes(pushStatus)">If on iOS, add this page to the Home Screen for it to work.</p>
                     <details v-if="['granted', 'wait'].includes(pushStatus)">
                         <summary class="text-center">UUID / Key / Auth / VAPID</summary>
                         <div class="mb-3 mt-2">
@@ -243,7 +243,7 @@
                     subscribeStatus: function () {
                         navigator.serviceWorker.ready.then((reg) => {
                             if (!reg.pushManager) {
-                                alert('Not support')
+                                console.error('Not support')
                                 return
                             }
                             reg.pushManager.getSubscription().then((subscription) => {
@@ -256,7 +256,7 @@
                     subscribe: function () {
                         navigator.serviceWorker.ready.then((reg) => {
                             if (!reg.pushManager) {
-                                alert('Not support')
+                                console.error('Not support')
                                 return
                             }
                             reg.pushManager
@@ -297,7 +297,7 @@
                     unSubscribe: function () {
                         navigator.serviceWorker.ready.then((reg) => {
                             if (!reg.pushManager) {
-                                alert('Not support')
+                                console.error('Not support')
                                 return
                             }
                             reg.pushManager
