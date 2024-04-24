@@ -227,14 +227,10 @@
                                 const signPayload = new URLSearchParams({ content, timestamp: String(hashContent?.timestamp || 0) }).toString()
 
                                 this.message = { content, sign: hashContent?.sign || '', verify: await this.verifySign(signPayload, hashContent?.sign || ''), timestamp: Number(hashContent?.timestamp || 0) }
-
-                                if (this.pushState === 'default' && this.uuid) {
-                                    this.initPushConfig()
-                                }
                                 break
                             case 'about':
                                 this.message = {
-                                    content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click **Send Message** on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, **Bold**, *Italic*, ***Bold & Italic***, ~~Delete~~. Nested syntax is not yet supported.\n\nOur code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
+                                    content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click **Send Message** on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, **Bold**, *Italic*, ***Bold & Italic***, ~~Delete~~. Nested syntax is not yet supported.\n\n6️⃣ It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **subscribe** button directly, which will not cause the \`uuid\` to be modified.\n\nOur code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
                                     sign: 'build-in',
                                     verify: true
                                 }
