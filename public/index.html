@@ -65,7 +65,12 @@
                         <template v-else>
                             <template v-for="(_message, i) in messageObject" :key="i">
                                 <template class="text-break" v-for="(__message, ii) in _message.str.split('\n')" :key="''+i+'_'+ii"> <br v-if="ii !== 0" /><span>{{ __message }}</span> </template>
-                                <a v-if="_message.link" :href="_message.link.href" target="_blank" @click="(e)=>{e.stopPropagation()}">{{ _message.link.name }}</a>
+                                <a v-if="['link1', 'link2'].includes(_message?.entity?.type)" :href="_message.entity.ext.href" target="_blank" @click="(e)=>{e.stopPropagation()}">{{ _message.entity.text }}</a>
+                                <code v-else-if="_message?.entity?.type === 'inlinecode'">{{ _message.entity.text }}</code>
+                                <strong v-else-if="_message?.entity?.type === 'bold_italic'"><em>{{ _message.entity.text }}</em></strong>
+                                <strong v-else-if="_message?.entity?.type === 'bold'">{{ _message.entity.text }}</strong>
+                                <em v-else-if="_message?.entity?.type === 'italic'">{{ _message.entity.text }}</em>
+                                <del v-else-if="_message?.entity?.type === 'delete'">{{ _message.entity.text }}</del>
                             </template>
                         </template>
                     </div>
@@ -176,8 +181,8 @@
                         if (this.message.content === '') {
                             return []
                         }
-                        const links = this.parseLinks(this.message.content)
-                        return this.newMessageObject(this.message.content, links)
+                        const entities = this.parseMarkdown(this.message.content)
+                        return this.newMessageObject(this.message.content, entities)
                     },
                     messageDate() {
                         if (!this.message.timestamp) {
@@ -215,14 +220,14 @@
                                 break
                             case 'about':
                                 this.message = {
-                                    content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click \`UUID / Key / Auth / VAPID\` on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ The currently supported markdown syntax is only links ( \`[]()\` or \`<>\` )\n\nTo learn more, please visit [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
+                                    content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click \`UUID / Key / Auth / VAPID\` on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [links](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, **Bold**, *Italic*, ***Bold & Italic***, ~~Delete~~\n\nTo learn more, please visit [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
                                     sign: 'build-in',
                                     verify: true
                                 }
                                 break
                             case 'help':
                                 this.message = {
-                                    content: 'step by step\n\n\nuuid="" # Get the uuid from the target client\nmessage="" # What to push\ncurl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"\n',
+                                    content: 'step by step\n\n\n`uuid="" # Get the uuid from the target client`\n`message="" # What to push`\n`curl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"`\n',
                                     sign: 'build-in',
                                     verify: true
                                 }
@@ -294,12 +299,11 @@
                             case 'wait':
                                 Notification.requestPermission().then((permission) => {
                                     this.pushStatus = permission
+                                    this.subscribe()
                                 })
-                                break
                             case 'denied':
                                 return
                         }
-                        this.subscribe()
                     },
                     subscribeStatus: function () {
                         navigator.serviceWorker.ready.then((reg) => {
@@ -469,36 +473,64 @@
                             new TextEncoder().encode(content)
                         )
                     },
-                    parseLinks: function (str = '') {
+                    parseMarkdown: function (str = '') {
                         if (!str) {
                             return []
                         }
-                        const matchLinks = this.PregMatchAll(/\[([^\]]+)\]\(([^)]+)\)|<([^>]+)>/g, str)
-                        const links = []
+                        const matchLinks = this.PregMatchAll(/\[([^\]]+)\]\(([^)]+)\)|<([^>]+)>|`([^`]+)`|\*{3}([^\*]+)\*{3}|\*{2}([^\*]+)\*{2}|\*{1}([^\*]+)\*{1}|~{2}([^~]+)~{2}/g, str)
+                        const entities = []
                         let position = 0
                         for (const i in matchLinks[0]) {
                             position = str.indexOf(matchLinks[0][i], position)
+                            const valueIndex = matchLinks.slice(1).findIndex((v) => v[i] !== undefined)
+                            let valueType = 'link1'
+                            switch (valueIndex) {
+                                case 2:
+                                    valueType = 'link2'
+                                    break
+                                case 3:
+                                    valueType = 'inlinecode'
+                                    break
+                                case 4:
+                                    valueType = 'bold_italic'
+                                    break
+                                case 5:
+                                    valueType = 'bold'
+                                    break
+                                case 6:
+                                    valueType = 'italic'
+                                    break
+                                case 7:
+                                    valueType = 'delete'
+                                    break
+                            }
                             const rename = matchLinks[2][i] !== undefined
-                            links.push({
-                                href: matchLinks[rename ? 2 : 3][i],
-                                name: matchLinks[rename ? 1 : 3][i],
+                            let entity = {
+                                type: valueType,
+                                text: matchLinks[valueIndex + 1][i],
                                 position,
                                 length: matchLinks[0][i].length
-                            })
+                            }
+                            if (['link1', 'link2'].includes(valueType)) {
+                                entity.ext = {
+                                    href: matchLinks[valueType === 'link1' ? 2 : 3][i]
+                                }
+                            }
+                            entities.push(entity)
                             position += matchLinks[0][i].length
                         }
-                        return links
+                        return entities
                     },
-                    newMessageObject: function (str = '', links = []) {
+                    newMessageObject: function (str = '', entities = []) {
                         const strLength = str.length
                         const newArray = []
                         let position = 0
-                        for (const link of links) {
+                        for (const entity of entities) {
                             newArray.push({
-                                str: str.slice(position, link.position),
-                                link
+                                str: str.slice(position, entity.position),
+                                entity
                             })
-                            position = link.position + link.length
+                            position = entity.position + entity.length
                         }
                         if (position < strLength) {
                             newArray.push({
