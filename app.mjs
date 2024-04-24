@@ -109,6 +109,11 @@ app.post('/push/:uuid?', async (c) => {
     let endpoint = query.get('endpoint')
     let auth = query.get('auth')
     let message = query.get('message')
+    let testMessage = query.get('test') === '1'
+
+    if (!message && !testMessage) {
+        return c.json(apiTemplate(403, 'Empty message', false))
+    }
 
     if (!(endpoint && p256dh && auth)) {
         if (kv[uuid]) {

@@ -22,7 +22,7 @@
 
     <body style="display: flex; justify-content: center; height: 90vh; margin: 20px; flex-direction: column">
         <div id="app" class="d-flex justify-content-center" style="overflow-y: auto">
-            <div style="max-width: 600px">
+            <div style="max-width: 600px; width: 95vw">
                 <div v-if="message.content">
                     <button class="btn btn-sm btn-danger" style="position: fixed; right: 2rem; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
@@ -119,57 +119,40 @@
                     <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.</p>
                     <p v-else-if="pushStatus === 'denied'" class="text-center">Please allow the browser to use notification.</p>
                     <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
+
                     <details v-if="['granted', 'wait'].includes(pushStatus)">
-                        <summary class="text-center">UUID / Key / Auth / VAPID</summary>
+                        <summary class="text-center">Send Message</summary>
                         <div class="mb-3 mt-2">
                             <label class="form-label" for="uuid">UUID</label>
                             <div class="input-group">
                                 <input id="uuid" type="text" class="form-control" v-model="uuid" aria-describedby="restore-uuid" />
                                 <button class="btn btn-secondary" type="button" id="restore-uuid" @click="restoreUUID">Restore</button>
                             </div>
+                            <div class="form-text" id="form-text-uuid">The message will be pushed to the device corresponding to the uuid</div>
                         </div>
                         <hr />
-
-                        <details>
-                            <summary class="text-center">MORE</summary>
-                            <div class="mb-3">
-                                <label class="form-label" for="vapid">VAPID</label>
-                                <div class="input-group">
-                                    <input id="vapid" type="text" class="form-control" :value="vapid" />
-                                </div>
-                                <div class="form-text" id="form-text-vapid">Public key for application</div>
-                            </div>
-                            <hr />
-                            <div class="mb-3">
-                                <label class="form-label" for="public-key">PublicKey</label>
-                                <div class="input-group">
-                                    <input id="public-key" type="text" class="form-control" :value="publicKey" />
-                                </div>
-                            </div>
-                            <hr />
-                            <div class="mb-3">
-                                <label class="form-label" for="auth">Auth</label>
-                                <div class="input-group">
-                                    <input id="auth" type="text" class="form-control" :value="auth" />
-                                </div>
-                            </div>
-                            <hr />
-                            <div class="mb-3">
-                                <label class="form-label" for="endpoint">Endpoint</label>
-                                <div class="input-group">
-                                    <input id="endpoint" type="text" class="form-control" :value="endpoint" />
-                                </div>
-                            </div>
-                            <hr />
-                        </details>
 
                         <div class="mb-3">
-                            <label class="form-label" for="message">Message</label>
+                            <label class="form-label d-flex justify-content-between" for="message">
+                                <span class="me-1">Message</span>
+                                <div v-if="push_status === 1" class="spinner-border spinner-border-sm" style="display: inline-block" role="status">
+                                    <span class="visually-hidden">Sending...</span>
+                                </div>
+                                <span v-else-if="push_status === 2">✅</span>
+                                <span v-else-if="push_status === 3">❌</span>
+                            </label>
                             <div class="input-group">
-                                <textarea rows="5" id="message" class="form-control" v-model="test_message"></textarea>
+                                <textarea rows="5" id="message" class="form-control" v-model="push_message"></textarea>
                             </div>
                         </div>
                         <hr />
+                        <details class="mb-3">
+                            <summary>Logs</summary>
+                            <ul>
+                                <li v-for="(log, i) in push_logs" :key="i">{{ log }}</li>
+                            </ul>
+                            <hr />
+                        </details>
                         <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="sendPush" style="width: 100%">PUSH!</button>
                     </details>
                     <p class="text-end"><span @click="pushState({ name: 'help' }, './#/help')" role="button" class="me-2">#help</span><span @click="pushState({ name: 'about' }, './#/about')" role="button">#about</span></p>
@@ -185,11 +168,11 @@
                 data: () => ({
                     pushStatus: '',
                     vapid: '',
-                    publicKey: '',
-                    auth: '',
-                    endpoint: '',
                     uuid: '',
-                    test_message: '',
+                    push_message: '',
+                    push_status: 0, // 0->idle, 1->sending, 2->success, 3->failed
+                    push_logs: [],
+
                     message: {
                         content: '',
                         sign: '',
@@ -247,15 +230,15 @@
                                 break
                             case 'about':
                                 this.message = {
-                                    content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click \`UUID / Key / Auth / VAPID\` on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, **Bold**, *Italic*, ***Bold & Italic***, ~~Delete~~. Nested syntax is not yet supported.\n\nTo learn more, please visit [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
-                                    sign: 'build-in',
+                                    content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click **Send Message** on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, **Bold**, *Italic*, ***Bold & Italic***, ~~Delete~~. Nested syntax is not yet supported.\n\nOur code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
+                                    sign: 'build-in:about',
                                     verify: true
                                 }
                                 break
                             case 'help':
                                 this.message = {
-                                    content: 'step by step\n\n\n`uuid="" # Get the uuid from the target client`\n`message="" # What to push`\n`curl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"`\n',
-                                    sign: 'build-in',
+                                    content: 'step by step...\n\n`uuid="" # Get the uuid from the target client`\n`message="" # What to push`\n`curl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"`\n',
+                                    sign: 'build-in:help',
                                     verify: true
                                 }
                             case 'import':
@@ -271,9 +254,6 @@
                 mounted: async function () {
                     this.updateNotifitionPermission()
                     this.subscribeStatus()
-                    this.publicKey = localStorage.getItem('push:public_key') || ''
-                    this.auth = localStorage.getItem('push:auth') || ''
-                    this.endpoint = localStorage.getItem('push:endpoint') || ''
                     this.uuid = localStorage.getItem('push:uuid') || ''
 
                     this.routerCase(location.hash)
@@ -358,21 +338,15 @@
                                 })
                                 .then((sub) => {
                                     sub = sub.toJSON()
-                                    this.publicKey = sub.keys.p256dh
-                                    this.auth = sub.keys.auth
-                                    this.endpoint = sub.endpoint
-                                    localStorage.setItem('push:public_key', this.publicKey)
-                                    localStorage.setItem('push:auth', this.auth)
-                                    localStorage.setItem('push:endpoint', this.endpoint)
                                     fetch(endpoint + '/subscribe/', {
                                         headers: {
                                             'content-type': 'application/x-www-form-urlencoded'
                                         },
                                         method: 'PUT',
                                         body: new URLSearchParams({
-                                            endpoint: this.endpoint,
-                                            p256dh: this.publicKey,
-                                            auth: this.auth
+                                            endpoint: sub.endpoint,
+                                            p256dh: sub.keys.p256dh,
+                                            auth: sub.keys.auth
                                         }).toString()
                                     })
                                         .then((res) => res.json())
@@ -412,13 +386,7 @@
                                                 })
                                         }
                                     })
-                                    localStorage.removeItem('push:public_key')
-                                    localStorage.removeItem('push:auth')
-                                    localStorage.removeItem('push:endpoint')
                                     localStorage.removeItem('push:uuid')
-                                    this.publicKey = ''
-                                    this.auth = ''
-                                    this.endpoint = ''
                                     this.uuid = ''
                                     this.pushStatus = 'wait'
                                 })
@@ -450,24 +418,33 @@
                         if (!this.uuid) {
                             return
                         }
+                        this.push_status = 1
                         fetch(endpoint + '/push/' + this.uuid, {
                             headers: {
                                 'content-type': 'application/x-www-form-urlencoded'
                             },
                             method: 'POST',
                             body: new URLSearchParams({
-                                // endpoint: this.endpoint,
-                                // p256dh: this.publicKey,
-                                // auth: this.auth,
-                                message: this.test_message
+                                message: this.push_message
                             }).toString()
                         })
                             .then((res) => res.json())
                             .then((res) => {
+                                this.push_status = res.code === 200 ? 2 : 3
+                                this.push_logs.unshift({
+                                    response: res
+                                })
                                 console.log(res)
+                                setTimeout(() => {
+                                    this.push_status = 0
+                                }, 1500)
                             })
                             .catch((e) => {
+                                this.push_status = 3
                                 console.error(e)
+                                setTimeout(() => {
+                                    this.push_status = 0
+                                }, 1500)
                             })
                     },
                     clickEvent: function (e, callback = () => {}) {
