@@ -114,13 +114,13 @@
                         </div>
                         <span>TinyPush</span>
                     </h1>
-                    <button v-if="pushStatus === 'wait'" class="btn btn-primary mb-2" @click="initPushConfig" style="width: 100%">Subscribe</button>
+                    <button v-if="pushStatus === 'default'" class="btn btn-primary mb-2" @click="initPushConfig" style="width: 100%">Subscribe</button>
                     <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="unSubscribe" style="width: 100%">Unsubscribe</button>
                     <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.</p>
                     <p v-else-if="pushStatus === 'denied'" class="text-center">Please allow the browser to use notification.</p>
                     <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
 
-                    <details v-if="['granted', 'wait'].includes(pushStatus)">
+                    <details v-if="['granted', 'default'].includes(pushStatus)">
                         <summary class="text-center">Send Message</summary>
                         <div class="mb-3 mt-2">
                             <label class="form-label" for="uuid">UUID</label>
@@ -227,6 +227,10 @@
                                 const signPayload = new URLSearchParams({ content, timestamp: String(hashContent?.timestamp || 0) }).toString()
 
                                 this.message = { content, sign: hashContent?.sign || '', verify: await this.verifySign(signPayload, hashContent?.sign || ''), timestamp: Number(hashContent?.timestamp || 0) }
+
+                                if (this.pushState === 'default' && this.uuid) {
+                                    this.initPushConfig()
+                                }
                                 break
                             case 'about':
                                 this.message = {
@@ -292,12 +296,8 @@
                     updateNotifitionPermission: function () {
                         if (!('Notification' in window)) {
                             this.pushStatus = 'no'
-                        } else if (Notification.permission === 'granted') {
-                            this.pushStatus = 'granted'
-                        } else if (Notification.permission === 'denied') {
-                            this.pushStatus = 'denied'
                         } else {
-                            this.pushStatus = 'wait'
+                            this.pushStatus = Notification.permission
                         }
                     },
                     initPushConfig: function () {
@@ -305,10 +305,12 @@
                             case 'no':
                             case 'granted':
                                 return
-                            case 'wait':
+                            case 'default':
                                 Notification.requestPermission().then((permission) => {
                                     this.pushStatus = permission
-                                    this.subscribe()
+                                    if (!this.uuid) {
+                                        this.subscribe()
+                                    }
                                 })
                             case 'denied':
                                 return
@@ -326,7 +328,7 @@
                             }
                             reg.pushManager.getSubscription().then((subscription) => {
                                 if (!subscription) {
-                                    this.pushStatus = 'wait'
+                                    this.pushStatus = 'default'
                                 }
                             })
                         })
@@ -402,7 +404,7 @@
                                     })
                                     localStorage.removeItem('push:uuid')
                                     this.uuid = ''
-                                    this.pushStatus = 'wait'
+                                    this.pushStatus = 'default'
                                 })
                                 .catch((e) => {
                                     console.error(e)
