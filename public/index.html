@@ -24,7 +24,7 @@
         <div id="app" class="d-flex justify-content-center" style="overflow-y: auto">
             <div style="max-width: 600px">
                 <div v-if="message.content">
-                    <button class="btn btn-sm btn-danger" style="position: fixed; right: 2rem; top: 2rem; width: 3; height: 3rem" @click="pushState({ name: 'main' }, '.')">
+                    <button class="btn btn-sm btn-danger" style="position: fixed; right: 2rem; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
                             <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
                         </svg>
@@ -58,7 +58,7 @@
                             <span><code :title="message.timestamp">{{ messageDate }}</code></span>
                         </small>
                     </div>
-                    <div :title="message.content" @click="(e) => {clickEvent(e, () => {message.originalMode=!message.originalMode})}">
+                    <div :title="message.content">
                         <template v-if="message.originalMode">
                             <p class="text-break" v-for="(_message, i) in message.content.trim().split('\n')" :key="i">{{ _message }}</p>
                         </template>
@@ -73,6 +73,29 @@
                                 <del v-else-if="_message?.entity?.type === 'delete'">{{ _message.entity.text }}</del>
                             </template>
                         </template>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button class="btn btn-sm" style="width: 2rem; height: 2rem" @click="message.originalMode=!message.originalMode">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" class="bi bi-markdown-fill" viewBox="0 0 16 16">
+                                <path v-if="message.originalMode" d="M14 3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM2 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
+                                <path v-if="message.originalMode" fill-rule="evenodd" d="M9.146 8.146a.5.5 0 0 1 .708 0L11.5 9.793l1.646-1.647a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 0-.708" />
+                                <path v-if="message.originalMode" fill-rule="evenodd" d="M11.5 5a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 1 .5-.5" />
+                                <path v-if="message.originalMode" d="M3.56 11V7.01h.056l1.428 3.239h.774l1.42-3.24h.056V11h1.073V5.001h-1.2l-1.71 3.894h-.039l-1.71-3.894H2.5V11z" />
+                                <path
+                                    v-else
+                                    d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm11.5 1a.5.5 0 0 0-.5.5v3.793L9.854 8.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L12 9.293V5.5a.5.5 0 0 0-.5-.5M3.56 7.01h.056l1.428 3.239h.774l1.42-3.24h.056V11h1.073V5.001h-1.2l-1.71 3.894h-.039l-1.71-3.894H2.5V11h1.06z"
+                                />
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm ms-1" style="width: 2rem; height: 2rem" @click="writeClipboardText">
+                            <svg v-if="copied" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check2" viewBox="0 0 16 16">
+                                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0" />
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
+                                <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z" />
+                                <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 <div v-else>
@@ -173,7 +196,8 @@
                         verify: false,
                         timestamp: 0
                     },
-                    route: ['main']
+                    route: ['main'],
+                    copied: false
                 }),
 
                 computed: {
@@ -223,7 +247,7 @@
                                 break
                             case 'about':
                                 this.message = {
-                                    content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click \`UUID / Key / Auth / VAPID\` on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, **Bold**, *Italic*, ***Bold & Italic***, ~~Delete~~\n\nTo learn more, please visit [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
+                                    content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click \`UUID / Key / Auth / VAPID\` on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, **Bold**, *Italic*, ***Bold & Italic***, ~~Delete~~. Nested syntax is not yet supported.\n\nTo learn more, please visit [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
                                     sign: 'build-in',
                                     verify: true
                                 }
@@ -569,6 +593,17 @@
                     },
                     restoreUUID: function () {
                         this.uuid = localStorage.getItem('push:uuid')
+                    },
+                    writeClipboardText: async function () {
+                        try {
+                            await navigator.clipboard.writeText(this.message.content)
+                            this.copied = true
+                            setTimeout(() => {
+                                this.copied = false
+                            }, 1500)
+                        } catch (error) {
+                            console.error(error.message)
+                        }
                     }
                 }
             }).mount('#app')
