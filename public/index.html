@@ -17,6 +17,9 @@
             a::after {
                 content: ' ↗';
             }
+            .hover-underline:hover {
+                text-decoration-line: underline;
+            }
         </style>
     </head>
 
@@ -24,20 +27,17 @@
         <div id="app" class="d-flex justify-content-center" style="overflow-y: auto">
             <div style="max-width: 600px; width: 95vw">
                 <div v-if="message.content" style="padding-top: 5rem; padding-bottom: 2rem">
-                    <button class="btn btn-sm btn-danger" style="position: fixed; right: 2rem; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')">
+                    <button class="btn btn-sm btn-danger" style="position: fixed; right: 4vw; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
                             <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
                         </svg>
                     </button>
-                    <div class="text-end" style="position: fixed; display: flex; flex-direction: column; right: 2rem; bottom: 2rem">
-                        <small>
-                            <span class="me-2"
-                                ><code class="text-break" :title="message.sign ? message.sign : '<unsigned>'" @click="(e) => {clickEvent(e, () => {message.longSign=!message.longSign})}"
-                                    >{{ message.sign ? (message.longSign ? message.sign : message.sign.slice(0, 12)) : '&lt;unsigned&gt;' }}</code
-                                ></span
-                            >
-                            <span style="display: inline-block">
-                                <svg v-if="message.verify " xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32">
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <em class="lead" v-if="messageDate" :title="message.timestamp">{{ messageDate }}</em>
+                            <em class="lead" v-else-if="message.sign?.startsWith('build-in:')">{{ message.sign }}</em>
+                            <div role="button" @click="writeClipboardText(message.sign)" style="display: inline-block" :title="message.sign ? message.sign : '<unsigned>'">
+                                <svg v-if="message.verify " xmlns="http://www.w3.org/2000/svg" width="1.1em" height="1.1em" viewBox="0 0 32 32">
                                     <g fill="none">
                                         <path fill="#00D26A" d="M2 6a4 4 0 0 1 4-4h20a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z" />
                                         <path
@@ -52,11 +52,9 @@
                                         d="M24.879 2.879A3 3 0 1 1 29.12 7.12l-8.79 8.79a.125.125 0 0 0 0 .177l8.79 8.79a3 3 0 1 1-4.242 4.243l-8.79-8.79a.125.125 0 0 0-.177 0l-8.79 8.79a3 3 0 1 1-4.243-4.242l8.79-8.79a.125.125 0 0 0 0-.177l-8.79-8.79A3 3 0 0 1 7.12 2.878l8.79 8.79a.125.125 0 0 0 .177 0z"
                                     />
                                 </svg>
-                            </span>
-                        </small>
-                        <small class="" v-if="messageDate">
-                            <span><code :title="message.timestamp">{{ messageDate }}</code></span>
-                        </small>
+                            </div>
+                        </div>
+                        <hr />
                     </div>
                     <div :title="message.content">
                         <template v-if="message.originalMode">
@@ -87,7 +85,7 @@
                                 />
                             </svg>
                         </button>
-                        <button class="btn btn-sm ms-1" style="width: 2rem; height: 2rem" @click="writeClipboardText">
+                        <button class="btn btn-sm ms-1" style="width: 2rem; height: 2rem" @click="writeClipboardText(message.content)">
                             <svg v-if="copied" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check2" viewBox="0 0 16 16">
                                 <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0" />
                             </svg>
@@ -155,7 +153,9 @@
                         </details>
                         <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="sendPush" style="width: 100%">PUSH!</button>
                     </details>
-                    <p class="text-end"><span @click="pushState({ name: 'help' }, './#/help')" role="button" class="me-2">#help</span><span @click="pushState({ name: 'about' }, './#/about')" role="button">#about</span></p>
+                    <p class="text-end">
+                        <span @click="pushState({ name: 'help' }, './#/help')" role="button" class="me-2 hover-underline">#help</span><span @click="pushState({ name: 'about' }, './#/about')" class="hover-underline" role="button">#about</span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -230,15 +230,15 @@
                                 break
                             case 'about':
                                 this.message = {
-                                    content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click **Send Message** on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, **Bold**, *Italic*, ***Bold & Italic***, ~~Delete~~. Nested syntax is not yet supported.\n\n6️⃣ It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **subscribe** button directly, which will not cause the \`uuid\` to be modified.\n\nOur code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
-                                    sign: 'build-in',
+                                    content: `TinyPush is a small tool for pushing content via WebPush 🚀\n\n1️⃣ Click on text to display the original text.\n\n2️⃣ A ✅ displayed in the top right corner indicates that the signature verification has been passed. Click the symbol to copy the signature.\n\n3️⃣ Click **Send Message** on the homepage to view the content. After entering the content in the message, click **PUSH!** to push the message.\n\n4️⃣ Please keep the UUID safe; anyone with the UUID can push messages to this device. If the UUID is leaked, please reapply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, **Bold**, *Italic*, ***Bold & Italic***, ~~Strikethrough~~. Nested syntax is not yet supported.\n\n6️⃣ It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **Subscribe** button directly, which will not cause the \`UUID\` to be modified.\n\nOur source code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push).\n`,
+                                    sign: 'build-in:about',
                                     verify: true
                                 }
                                 break
                             case 'help':
                                 this.message = {
                                     content: 'step by step...\n\n`uuid="" # Get the uuid from the target client`\n`message="" # What to push`\n`curl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"`\n',
-                                    sign: 'build-in',
+                                    sign: 'build-in:help',
                                     verify: true
                                 }
                             case 'import':
@@ -583,9 +583,9 @@
                     restoreUUID: function () {
                         this.uuid = localStorage.getItem('push:uuid')
                     },
-                    writeClipboardText: async function () {
+                    writeClipboardText: async function (text) {
                         try {
-                            await navigator.clipboard.writeText(this.message.content)
+                            await navigator.clipboard.writeText(text)
                             this.copied = true
                             setTimeout(() => {
                                 this.copied = false
