@@ -23,7 +23,7 @@ export const GetPublicKey = (jwk) => base64_to_base64url(buffer_to_base64(concat
 export const BuildJWT = async (vapidObject = {}, aud = '') => {
     const now = Date.now()
 
-    if (GlobalJWT[aud].content && GlobalJWT[aud].expire > now) {
+    if (GlobalJWT[aud] && GlobalJWT[aud].content && GlobalJWT[aud].expire > now) {
         return GlobalJWT[aud].content
     }
 
