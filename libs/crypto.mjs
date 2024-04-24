@@ -14,10 +14,7 @@ export const ImportKey = (jwk, name = 'ECDH') => {
     )
 }
 
-export let GlobalJWT = {
-    content: '',
-    expire: 0
-}
+export let GlobalJWT = {}
 
 export const GetPrivateKey = (jwk) => jwk.d
 
@@ -26,8 +23,8 @@ export const GetPublicKey = (jwk) => base64_to_base64url(buffer_to_base64(concat
 export const BuildJWT = async (vapidObject = {}, aud = '') => {
     const now = Date.now()
 
-    if (GlobalJWT.content && GlobalJWT.expire > now) {
-        return GlobalJWT.content
+    if (GlobalJWT[aud].content && GlobalJWT[aud].expire > now) {
+        return GlobalJWT[aud].content
     }
 
     if (!(vapidObject.key && aud && vapidObject.sub)) {
@@ -45,9 +42,12 @@ export const BuildJWT = async (vapidObject = {}, aud = '') => {
         }
         const unsignedToken = base64_to_base64url(btoa(JSON.stringify(info))) + '.' + base64_to_base64url(btoa(JSON.stringify(data)))
 
-        GlobalJWT.content = unsignedToken + '.' + base64_to_base64url(buffer_to_base64(await Sign(vapidObject.key, new TextEncoder().encode(unsignedToken))))
-        GlobalJWT.expire = now + 30 * 60 * 1000
-        return GlobalJWT.content
+        GlobalJWT[aud] = {
+            content: unsignedToken + '.' + base64_to_base64url(buffer_to_base64(await Sign(vapidObject.key, new TextEncoder().encode(unsignedToken)))),
+            expire: now + 30 * 60 * 1000
+        }
+
+        return GlobalJWT[AudioListener].content
     } catch (e) {
         log.error(e)
         return ''
