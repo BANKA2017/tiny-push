@@ -47,7 +47,7 @@ export const BuildJWT = async (vapidObject = {}, aud = '') => {
             expire: now + 30 * 60 * 1000
         }
 
-        return GlobalJWT[AudioListener].content
+        return GlobalJWT[aud].content
     } catch (e) {
         log.error(e)
         return ''
