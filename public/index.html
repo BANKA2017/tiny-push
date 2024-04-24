@@ -23,7 +23,7 @@
     <body style="display: flex; justify-content: center; height: 90vh; margin: 20px; flex-direction: column">
         <div id="app" class="d-flex justify-content-center" style="overflow-y: auto">
             <div style="max-width: 600px; width: 95vw">
-                <div v-if="message.content">
+                <div v-if="message.content" style="padding-top: 5rem; padding-bottom: 2rem">
                     <button class="btn btn-sm btn-danger" style="position: fixed; right: 2rem; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
                             <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
@@ -231,14 +231,14 @@
                             case 'about':
                                 this.message = {
                                     content: `TinyPush is a tiny tool to push content via WebPush 🚀\n\n1️⃣ Click on text to display original text\n\n2️⃣ A ✅ displayed in the lower right corner indicates that the signature verification has been passed.\n\n3️⃣ Click **Send Message** on the homepage to view the content. After entering the content in message, click **PUSH!** to push the test message.\n\n4️⃣ Please keep the uuid safe, anyone with a uuid can push messages to this device. If the uuid is leaked, please re-apply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, **Bold**, *Italic*, ***Bold & Italic***, ~~Delete~~. Nested syntax is not yet supported.\n\nOur code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push)\n`,
-                                    sign: 'build-in:about',
+                                    sign: 'build-in',
                                     verify: true
                                 }
                                 break
                             case 'help':
                                 this.message = {
                                     content: 'step by step...\n\n`uuid="" # Get the uuid from the target client`\n`message="" # What to push`\n`curl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"`\n',
-                                    sign: 'build-in:help',
+                                    sign: 'build-in',
                                     verify: true
                                 }
                             case 'import':
@@ -258,6 +258,8 @@
 
                     this.routerCase(location.hash)
                     addEventListener('popstate', (event) => {
+                        this.updateNotifitionPermission()
+                        this.subscribeStatus()
                         this.routerCase(event.target.location.hash)
                     })
 
@@ -313,6 +315,10 @@
                         }
                     },
                     subscribeStatus: function () {
+                        if (!('serviceWorker' in navigator)) {
+                            console.error('Not support')
+                            return
+                        }
                         navigator.serviceWorker.ready.then((reg) => {
                             if (!reg.pushManager) {
                                 console.error('Not support')
@@ -326,6 +332,10 @@
                         })
                     },
                     subscribe: function () {
+                        if (!('serviceWorker' in navigator)) {
+                            console.error('Not support')
+                            return
+                        }
                         navigator.serviceWorker.ready.then((reg) => {
                             if (!reg.pushManager) {
                                 console.error('Not support')
@@ -361,6 +371,10 @@
                         })
                     },
                     unSubscribe: function () {
+                        if (!('serviceWorker' in navigator)) {
+                            console.error('Not support')
+                            return
+                        }
                         navigator.serviceWorker.ready.then((reg) => {
                             if (!reg.pushManager) {
                                 console.error('Not support')
@@ -593,7 +607,7 @@
                         //console.log('register a service worker: ', reg)
                     })
                     .catch((err) => {
-                        console.log('err: ', err)
+                        console.error('err: ', err)
                     })
             }
         </script>
