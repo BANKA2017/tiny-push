@@ -23,14 +23,14 @@ export const GetPrivateKey = (jwk) => jwk.d
 
 export const GetPublicKey = (jwk) => base64_to_base64url(buffer_to_base64(concatBuffer(new Uint8Array([4]).buffer, base64_to_buffer(base64url_to_base64(jwk.x)), base64_to_buffer(base64url_to_base64(jwk.y)))))
 
-export const BuildJWT = async (vapidObject = {}) => {
+export const BuildJWT = async (vapidObject = {}, aud = '') => {
     const now = Date.now()
 
     if (GlobalJWT.content && GlobalJWT.expire > now) {
         return GlobalJWT.content
     }
 
-    if (!(vapidObject.key && vapidObject.aud && vapidObject.sub)) {
+    if (!(vapidObject.key && aud && vapidObject.sub)) {
         return ''
     }
     try {
@@ -39,8 +39,8 @@ export const BuildJWT = async (vapidObject = {}) => {
             alg: 'ES256'
         }
         const data = {
-            aud: vapidObject.aud,
-            exp: Math.floor(now / 1000) + 12 * 60 * 60,
+            aud,
+            exp: Math.floor(now / 1000) + 60 * 60,
             sub: vapidObject.sub
         }
         const unsignedToken = base64_to_base64url(btoa(JSON.stringify(info))) + '.' + base64_to_base64url(btoa(JSON.stringify(data)))

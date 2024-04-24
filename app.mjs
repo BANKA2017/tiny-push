@@ -130,18 +130,22 @@ app.post('/push/:uuid?', async (c) => {
         }
     }
 
+    let aud = ''
     if (!endpoint) {
         return c.json(apiTemplate(403, 'No endpoint', false))
     } else {
         try {
-            vapidObject.aud = new URL(endpoint).origin
+            aud = new URL(endpoint).origin
+            if (!aud) {
+                return c.json(apiTemplate(403, 'Invalid endpoint', false))
+            }
         } catch (e) {
             log.error(e)
             return c.json(apiTemplate(403, 'Invalid endpoint', false))
         }
     }
 
-    const jwt = await BuildJWT(vapidObject)
+    const jwt = await BuildJWT(vapidObject, aud)
 
     // nonce and cek
     const eccKeyData = await crypto.subtle.generateKey(
