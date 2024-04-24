@@ -204,7 +204,8 @@
                 watch: {
                     async vapid(newVal, oldVal) {
                         if (newVal != '' && this.route?.[0] === 'preview') {
-                            this.message.verify = await this.verifySign(this.message.content || '', this.message.sign || '')
+                            const signPayload = new URLSearchParams({ content: this.message.content || '', timestamp: String(this.message.timestamp || 0) }).toString()
+                            this.message.verify = await this.verifySign(signPayload, this.message.sign || '')
                         }
                     },
                     async route(newVal, oldVal) {
@@ -216,7 +217,9 @@
                                 const hashContent = JSON.parse(atob(newVal[1]))
                                 const content = new TextDecoder('utf-8').decode(this.base64_to_buffer(this.base64url_to_base64(hashContent.content)))
                                 //console.log(hashContent, content)
-                                this.message = { content, sign: hashContent?.sign || '', verify: await this.verifySign(content, hashContent?.sign || ''), timestamp: Number(hashContent?.timestamp || 0) }
+                                const signPayload = new URLSearchParams({ content, timestamp: String(hashContent?.timestamp || 0) }).toString()
+
+                                this.message = { content, sign: hashContent?.sign || '', verify: await this.verifySign(signPayload, hashContent?.sign || ''), timestamp: Number(hashContent?.timestamp || 0) }
                                 break
                             case 'about':
                                 this.message = {
