@@ -66,28 +66,65 @@
                             <p class="text-break" v-for="(_message, i) in message.content.trim().split('\n')" :key="i">{{ _message }}</p>
                         </template>
                         <template v-else>
-                            <div v-for="(_message, i) in messageObject" :key="i" class="my-2">
-                                <template class="text-break" v-for="(__message, ii) in _message" :key="''+i+'_'+ii">
-                                    <span v-if="__message.str">{{ __message.str }}</span>
-                                    <a v-if="['link1', 'link2'].includes(__message?.entity?.type)" :href="__message.entity.ext.href" target="_blank" @click="(e)=>{e.stopPropagation()}">{{ __message.entity.text }}</a>
-                                    <code v-else-if="__message?.entity?.type === 'inlinecode'">{{ __message.entity.text }}</code>
-                                    <strong v-else-if="__message?.entity?.type === 'bold_italic'"><em>{{ __message.entity.text }}</em></strong>
-                                    <strong v-else-if="__message?.entity?.type === 'bold'">{{ __message.entity.text }}</strong>
-                                    <em v-else-if="__message?.entity?.type === 'italic'">{{ __message.entity.text }}</em>
-                                    <del v-else-if="__message?.entity?.type === 'delete'">{{ __message.entity.text }}</del>
-                                    <component :is="'h' + __message?.entity?.ext?.level" v-else-if="__message?.entity?.type === 'heading'">{{ __message.entity.text }}</component>
-                                    <li v-else-if="__message?.entity?.type.startsWith('list')">
-                                        <input v-if="__message?.entity?.type === 'list_check'" class="form-check-input" type="checkbox" :checked="__message?.entity?.ext?.value" />
-                                        {{ __message.entity.text }}
-                                    </li>
-                                    <div class="card" v-else-if="__message?.entity?.type === 'blockquote'">
-                                        <div class="card-body quote-card-body">{{ __message.entity.text }}</div>
+                            <div v-for="paragraph in messageObject" :key="'paragraph-'+paragraph" class="my-2 text-break">
+                                <component :is="'h' + paragraph?.ext?.level" v-if="paragraph?.type === 'heading'">
+                                    <template v-for="node in paragraph.nodes" :key="node.text">
+                                        <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
+                                        <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href" target="_blank">{{ node.text }}</a>
+                                        <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
+                                        <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
+                                        <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
+                                        <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
+                                        <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
+                                    </template>
+                                </component>
+                                <li v-else-if="paragraph?.type.startsWith('list')">
+                                    <input v-if="paragraph?.type === 'list_check'" class="form-check-input me-2" type="checkbox" :checked="paragraph?.ext?.value" />
+                                    <template v-for="node in paragraph.nodes" :key="node.text">
+                                        <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
+                                        <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href" target="_blank">{{ node.text }}</a>
+                                        <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
+                                        <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
+                                        <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
+                                        <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
+                                        <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
+                                    </template>
+                                </li>
+                                <div class="card" v-else-if="paragraph?.type === 'blockquote'">
+                                    <div class="card-body quote-card-body">
+                                        <template v-for="node in paragraph.nodes" :key="node.text">
+                                            <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
+                                            <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href" target="_blank">{{ node.text }}</a>
+                                            <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
+                                            <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
+                                            <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
+                                            <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
+                                            <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
+                                        </template>
                                     </div>
-                                </template>
+                                </div>
+                                <hr v-else-if="paragraph?.type === 'line'" />
+                                <div v-else>
+                                    <template v-for="node in paragraph.nodes" :key="node.text">
+                                        <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
+                                        <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href" target="_blank">{{ node.text }}</a>
+                                        <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
+                                        <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
+                                        <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
+                                        <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
+                                        <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
+                                    </template>
+                                </div>
                             </div>
                         </template>
                     </div>
                     <div class="d-flex justify-content-end">
+                        <button v-if="!message?.sign?.startsWith('build-in:')" class="btn btn-sm" style="width: 2rem; height: 2rem" @click="modifyBookmarks">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" class="bi bi-markdown-fill" viewBox="0 0 16 16">
+                                <path v-if="bookmarks.some(x => (message.content === x.content) && (message.timestamp === x.timestamp))" d="M2 2v13.5a.5.5 0 0 0 .74.439L8 13.069l5.26 2.87A.5.5 0 0 0 14 15.5V2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2" />
+                                <path v-else d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1z" />
+                            </svg>
+                        </button>
                         <button class="btn btn-sm" style="width: 2rem; height: 2rem" @click="message.originalMode=!message.originalMode">
                             <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" class="bi bi-markdown-fill" viewBox="0 0 16 16">
                                 <path v-if="message.originalMode" d="M14 3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM2 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
@@ -110,6 +147,17 @@
                             </svg>
                         </button>
                     </div>
+                </div>
+                <div v-else-if="route[0] === 'bookmarks'">
+                    <h1 class="text-start mb-2">
+                        <span>Bookmarks</span>
+                    </h1>
+                    <template v-for="(bookmark, i) in bookmarks" :key="bookmark.content + '-' + bookmark.timestamp">
+                        <button class="d-flex justify-content-between btn btn-dark" style="width: 100%" @click="pushToPreview(bookmark)">
+                            <span>{{ parseDate(bookmark.timestamp) }}</span>
+                            <span>{{ [...bookmark.content].slice(0, 20).join('') }}...</span>
+                        </button>
+                    </template>
                 </div>
                 <div v-else>
                     <h1 class="text-center mb-2">
@@ -155,7 +203,7 @@
                                 <span v-else-if="push_status === 3">❌</span>
                             </label>
                             <div class="input-group">
-                                <textarea rows="5" id="message" class="form-control" v-model="push_message" placeholder="🔔New message..."></textarea>
+                                <textarea rows="5" id="message" class="form-control" v-model="push_message" placeholder="New message..."></textarea>
                             </div>
                         </div>
                         <hr />
@@ -169,7 +217,8 @@
                         <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="sendPush" style="width: 100%">PUSH!</button>
                     </details>
                     <p class="text-end">
-                        <span @click="pushState({ name: 'help' }, './#/help')" role="button" class="me-2 hover-underline">#help</span><span @click="pushState({ name: 'about' }, './#/about')" class="hover-underline" role="button">#about</span>
+                        <span @click="pushState({ name: 'bookmarks' }, './#/bookmarks')" role="button" class="me-2 hover-underline">#bookmarks</span>
+                        <span @click="pushState({ name: 'help' }, './#/help')" role="button" class="me-2 hover-underline">#help</span> <span @click="pushState({ name: 'about' }, './#/about')" class="hover-underline" role="button">#about</span>
                     </p>
                 </div>
             </div>
@@ -187,7 +236,7 @@
                     push_message: '',
                     push_status: 0, // 0->idle, 1->sending, 2->success, 3->failed
                     push_logs: [],
-
+                    bookmarks: [],
                     message: {
                         content: '',
                         sign: '',
@@ -208,24 +257,14 @@
                         }
 
                         return this.message.content.split('\n').map((message) => {
-                            return this.newMessageObject(message, this.parseMarkdown(message))
+                            return this.newMessageObject(message)
                         })
                     },
                     messageDate() {
                         if (!this.message.timestamp) {
                             return ''
                         }
-                        try {
-                            const tmpDate = new Date(this.message.timestamp)
-                            //4:22 PM · 19 Aug, 2022
-                            return `${tmpDate.getFullYear()}-${(tmpDate.getMonth() + 1).toString().padStart(2, '0')}-${tmpDate.getDate().toString().padStart(2, '0')} · ${tmpDate.getHours()}:${tmpDate
-                                .getMinutes()
-                                .toString()
-                                .padStart(2, '0')}:${tmpDate.getSeconds().toString().padStart(2, '0')}`
-                        } catch (e) {
-                            console.error(e)
-                            return ''
-                        }
+                        return this.parseDate(this.message.timestamp)
                     }
                 },
                 watch: {
@@ -250,7 +289,7 @@
                                 break
                             case 'about':
                                 this.message = {
-                                    content: `### What is TinyPush\n\n> TinyPush is a small tool for pushing content via WebPush 🚀\n\n1️⃣ Click the markdown icon in the bottom right corner to display the original text.\n\n2️⃣ A ✅ displayed in the top right corner indicates that the signature verification has been passed. Click the symbol to copy the signature.\n\n3️⃣ Click **Send Message** on the homepage to view the content. After entering the content in the message, click **PUSH!** to push the message.\n\n4️⃣ Please keep the UUID safe; anyone with the UUID can push messages to this device. If the UUID is leaked, please reapply for a subscription after unsubscribing on the homepage.\n\n5️⃣ Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inlinecode = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~. Nested syntax is not yet supported.\n\n6️⃣ It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **Subscribe** button directly, which will not cause the \`UUID\` to be modified.\n\nOur source code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push).\n`,
+                                    content: `### What is TinyPush\n\n> TinyPush is a small tool for pushing content via WebPush 🚀\n\n- Click the markdown icon in the bottom right corner to display the original text.\n\n- A ✅ displayed in the top right corner indicates that the signature verification has been passed. Click the symbol to copy the signature.\n\n- Click **Send Message** on the homepage to view the content. After entering the content in the message, click **PUSH!** to push the message.\n\n- Please keep the UUID safe; anyone with the UUID can push messages to this device. If the UUID is leaked, please reapply for a subscription after unsubscribing on the homepage.\n\n- Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~. Nested syntax is not yet supported. [Full example](/#/markdown)\n\n- It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **Subscribe** button directly, which will not cause the \`UUID\` to be modified.\n---\nOur source code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push).\n`,
                                     sign: 'build-in:about',
                                     verify: true
                                 }
@@ -261,9 +300,19 @@
                                     sign: 'build-in:help',
                                     verify: true
                                 }
+                                break
+                            case 'markdown':
+                                this.message = {
+                                    content:
+                                        '# Heading 1\n## Heading 2\n### Heading 3\n#### Heading 4\n##### Heading 5\n###### Heading 6\n- list 1\n- list 2\n- list 3\n- [x] list 1\n- [x] list 2\n- [ ] list 3\n> Blockquote 1???*Italic* `# or just single line code`\n[link 1](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~',
+                                    sign: 'build-in:markdown',
+                                    verify: true
+                                }
+                                break
                             case 'import':
                                 break
                             case 'main':
+                            case 'bookmarks':
                                 this.message = { content: '', sign: '', verify: false, timestamp: 0 }
                                 break
                         }
@@ -275,6 +324,11 @@
                     this.updateNotifitionPermission()
                     this.subscribeStatus()
                     this.uuid = localStorage.getItem('push:uuid') || ''
+                    try {
+                        this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
+                    } catch (e) {
+                        console.error(e)
+                    }
 
                     this.routerCase(location.hash)
                     addEventListener('popstate', (event) => {
@@ -446,6 +500,14 @@
                         }
                         return bytes.buffer
                     },
+                    buffer_to_base64: function (buf) {
+                        let binary = ''
+                        const bytes = new Uint8Array(buf)
+                        for (var i = 0; i < bytes.byteLength; i++) {
+                            binary += String.fromCharCode(bytes[i])
+                        }
+                        return btoa(binary)
+                    },
                     sendPush: function () {
                         if (!this.uuid) {
                             return
@@ -519,27 +581,8 @@
                         for (const i in matchEntities[0]) {
                             position = str.indexOf(matchEntities[0][i], position)
                             const valueIndex = matchEntities.slice(1).findIndex((v) => v[i] !== undefined)
-                            let valueType = 'link1'
-                            switch (valueIndex) {
-                                case 2:
-                                    valueType = 'link2'
-                                    break
-                                case 3:
-                                    valueType = 'inlinecode'
-                                    break
-                                case 4:
-                                    valueType = 'bold_italic'
-                                    break
-                                case 5:
-                                    valueType = 'bold'
-                                    break
-                                case 6:
-                                    valueType = 'italic'
-                                    break
-                                case 7:
-                                    valueType = 'delete'
-                                    break
-                            }
+
+                            let valueType = ['link1', 'link1', 'link2', 'inlinecode', 'bold_italic', 'bold', 'italic', 'delete'][valueIndex]
                             const rename = matchEntities[2][i] !== undefined
                             let entity = {
                                 type: valueType,
@@ -557,81 +600,57 @@
                         }
                         return entities
                     },
-                    newMessageObject: function (str = '', entities = []) {
+                    newMessageObject: function (str = '') {
                         const strLength = str.length
-                        const newArray = []
+                        let paragraphObject = {
+                            type: 'paragraph',
+                            text: str,
+                            nodes: []
+                        }
+
+                        const pregLine = this.PregMatchAll(/^(#{1,6}) (.*)$|^- \[(x| )\] (.*)$|^\- (.*)$|^> (.*)$|^([\-]+)$/gm, str)
+                        if (pregLine.length) {
+                            const valueIndex = pregLine.slice(1).findIndex((v) => v[0] !== undefined)
+                            let valueType
+                            switch (valueIndex) {
+                                case 0:
+                                    paragraphObject.type = 'heading'
+                                    paragraphObject.text = pregLine[valueIndex + 2][0]
+                                    paragraphObject.ext = {
+                                        level: pregLine[valueIndex + 1][0].length
+                                    }
+                                    break
+                                case 2:
+                                    paragraphObject.type = 'list_check'
+                                    paragraphObject.text = pregLine[valueIndex + 2][0]
+                                    paragraphObject.ext = {
+                                        value: pregLine[valueIndex + 1][0] === 'x'
+                                    }
+                                    break
+                                case 4:
+                                    paragraphObject.type = 'list'
+                                    paragraphObject.text = pregLine[valueIndex + 1][0]
+                                    break
+                                case 5:
+                                    paragraphObject.type = 'blockquote'
+                                    paragraphObject.text = pregLine[valueIndex + 1][0]
+                                    break
+                                case 6:
+                                    paragraphObject.type = 'line'
+                                    paragraphObject.text = pregLine[valueIndex + 1][0]
+                                    break
+                            }
+                        }
+                        const entities = this.parseMarkdown(paragraphObject.text)
                         let position = 0
                         for (const entity of entities) {
-                            newArray.push({
-                                str: str.slice(position, entity.position),
-                                entity
-                            })
+                            paragraphObject.nodes.push({ type: 'plaintext', text: paragraphObject.text.slice(position, entity.position) }, entity)
                             position = entity.position + entity.length
                         }
                         if (position < strLength) {
-                            const pregLine = this.PregMatchAll(/^(#{1,6}) (.*)$|^- \[(x| )\] (.*)$|^\- (.*)$|^> (.*)$/gm, str)
-                            if (pregLine.length) {
-                                const valueIndex = pregLine.slice(1).findIndex((v) => v[0] !== undefined)
-                                let valueType
-                                switch (valueIndex) {
-                                    case 0:
-                                        valueType = 'heading'
-                                        newArray.push({
-                                            entity: {
-                                                type: valueType,
-                                                text: pregLine[valueIndex + 2][0],
-                                                position,
-                                                length: pregLine[0][0].length,
-                                                ext: {
-                                                    level: pregLine[valueIndex + 1][0].length
-                                                }
-                                            }
-                                        })
-                                        break
-                                    case 2:
-                                        valueType = 'list_check'
-                                        newArray.push({
-                                            entity: {
-                                                type: valueType,
-                                                text: pregLine[valueIndex + 2][0],
-                                                position,
-                                                length: pregLine[0][0].length,
-                                                ext: {
-                                                    value: pregLine[valueIndex + 1][0] === 'x'
-                                                }
-                                            }
-                                        })
-                                        break
-                                    case 4:
-                                        valueType = 'list'
-                                        newArray.push({
-                                            entity: {
-                                                type: valueType,
-                                                text: pregLine[valueIndex + 1][0],
-                                                position,
-                                                length: pregLine[0][0].length
-                                            }
-                                        })
-                                        break
-                                    case 5:
-                                        valueType = 'blockquote'
-                                        newArray.push({
-                                            entity: {
-                                                type: valueType,
-                                                text: pregLine[valueIndex + 1][0],
-                                                position,
-                                                length: pregLine[0][0].length
-                                            }
-                                        })
-                                        break
-                                }
-                            } else {
-                                newArray.push({
-                                    str: str.slice(position)
-                                })
-                            }
+                            paragraphObject.nodes.push({ type: 'plaintext', text: paragraphObject.text.slice(position) })
                         }
-                        return newArray
+                        return paragraphObject
                     },
                     PregMatchAll: (regex = new RegExp('', 'gm'), text = '') => {
                         let handle
@@ -673,6 +692,40 @@
                         } catch (error) {
                             console.error(error.message)
                         }
+                    },
+                    modifyBookmarks: function () {
+                        const index = this.bookmarks.findIndex((x) => this.message.content === x.content && this.message.timestamp === x.timestamp)
+                        if (index === -1) {
+                            this.bookmarks.unshift({
+                                content: this.message.content,
+                                timestamp: this.message.timestamp,
+                                sign: this.message.sign
+                            })
+                        } else {
+                            this.bookmarks = [...this.bookmarks.slice(0, index), ...this.bookmarks.slice(index + 1)]
+                        }
+                        localStorage.setItem('push:bookmarks', JSON.stringify(this.bookmarks))
+                    },
+                    parseDate: function (timestamp = 0) {
+                        try {
+                            const tmpDate = new Date(timestamp)
+                            return `${tmpDate.getFullYear()}-${(tmpDate.getMonth() + 1).toString().padStart(2, '0')}-${tmpDate.getDate().toString().padStart(2, '0')} · ${tmpDate.getHours().toString().padStart(2, '0')}:${tmpDate
+                                .getMinutes()
+                                .toString()
+                                .padStart(2, '0')}:${tmpDate.getSeconds().toString().padStart(2, '0')}`
+                        } catch (e) {
+                            console.error(e)
+                            return ''
+                        }
+                    },
+                    pushToPreview: function (message = {}) {
+                        if (!(message.content && message.sign && message.timestamp)) {
+                            return
+                        }
+                        this.pushState(
+                            { name: 'preview' },
+                            './#/preview/' + btoa(JSON.stringify({ content: this.base64_to_base64url(this.buffer_to_base64(new TextEncoder().encode(message.content))), sign: message.sign, timestamp: message.timestamp }))
+                        )
                     }
                 }
             }).mount('#app')
