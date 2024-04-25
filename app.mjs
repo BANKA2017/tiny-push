@@ -10,7 +10,7 @@ import { Hono } from 'hono'
 import { showRoutes } from 'hono/dev'
 import log from './libs/console.mjs'
 import { readFileSync } from 'node:fs'
-import { base64_to_base64url, buffer_to_base64, BuildJWT, Encrypt, GetAESGCMNonceAndCekAndContent, GetPublicKey, Sign } from './libs/crypto.mjs'
+import { base64_to_base64url, buffer_to_base64, BuildJWT, Encrypt, GetAESGCMNonceAndCekAndContent, GetAES128GCMNonceAndCekAndContent, GetPublicKey, Sign, concatBuffer } from './libs/crypto.mjs'
 import { saveKV } from './libs/db.mjs'
 import { VAPID as vapidObject } from './db/vapid.mjs'
 const apiTemplate = (code = 403, message = 'Invalid Request', data = {}, version = 'push') => {
@@ -110,6 +110,7 @@ app.post('/push/:uuid?', async (c) => {
     let auth = query.get('auth')
     let message = query.get('message')
     let testMessage = query.get('test') === '1'
+    let encoding = query.get('encoding') === 'aes128gcm' ? 'aes128gcm' : 'aesgcm'
 
     if (!message && !testMessage) {
         return c.json(apiTemplate(403, 'Empty message', false))
@@ -157,9 +158,19 @@ app.post('/push/:uuid?', async (c) => {
         ['deriveKey', 'deriveBits']
     )
 
-    const salt = base64_to_base64url(buffer_to_base64(crypto.getRandomValues(new Uint8Array(16)).buffer))
+    const salt = crypto.getRandomValues(new Uint8Array(16)).buffer
 
-    const { nonce, cek, content: context } = await GetAESGCMNonceAndCekAndContent(p256dh, auth, eccKeyData, salt)
+    let nonce, cek
+
+    if (encoding === 'aes128gcm') {
+        const d = await GetAES128GCMNonceAndCekAndContent(p256dh, auth, eccKeyData, salt)
+        nonce = d.nonce
+        cek = d.cek
+    } else {
+        const d = await GetAESGCMNonceAndCekAndContent(p256dh, auth, eccKeyData, salt)
+        nonce = d.nonce
+        cek = d.cek
+    }
 
     const eccPublicKey = await crypto.subtle.exportKey('raw', eccKeyData.publicKey)
 
@@ -169,27 +180,38 @@ app.post('/push/:uuid?', async (c) => {
     const signPayload = new URLSearchParams({ content, timestamp: String(timestamp) }).toString()
 
     const sign = base64_to_base64url(buffer_to_base64(await Sign(vapidObject.key, new TextEncoder().encode(signPayload))))
-    //log.log(buffer_to_base64(nonce), buffer_to_base64(cek), buffer_to_base64(context), sign)
-    const payload = new Uint8Array(await Encrypt(nonce, cek, new TextEncoder().encode(JSON.stringify({ content, sign, timestamp }))))
+    let payload = new Uint8Array(await Encrypt(nonce, cek, new TextEncoder().encode(JSON.stringify({ content, sign, timestamp })), encoding))
+
+    let headers = {
+        'Content-Type': 'application/octet-stream',
+        'Content-Encoding': encoding,
+        TTL: 60
+    }
+    if (encoding === 'aes128gcm') {
+        headers['Authorization'] = 'vapid t=' + jwt + ',k=' + GetPublicKey(vapidObject.key)
+        payload = concatBuffer(salt, new Uint8Array([0, 0, 16, 0]), new Uint8Array([65]), eccPublicKey, payload)
+        headers['Content-Length'] = payload.byteLength
+    } else {
+        headers['Authorization'] = 'WebPush ' + jwt
+        headers['Crypto-Key'] = 'dh=' + base64_to_base64url(buffer_to_base64(eccPublicKey)) + ';p256ecdsa=' + GetPublicKey(vapidObject.key)
+        headers['Encryption'] = 'salt=' + base64_to_base64url(buffer_to_base64(salt))
+        headers['Content-Length'] = payload.byteLength
+    }
 
     try {
         const response = await fetch(endpoint, {
-            headers: {
-                Authorization: 'WebPush ' + jwt,
-                'Content-Length': payload.byteLength,
-                'Crypto-Key': 'dh=' + base64_to_base64url(buffer_to_base64(eccPublicKey)) + ';p256ecdsa=' + GetPublicKey(vapidObject.key),
-                'Content-Type': 'application/octet-stream',
-                'Content-Encoding': 'aesgcm',
-                Encryption: 'salt=' + salt,
-                TTL: 60
-            },
+            headers,
             method: 'POST',
             body: payload
         })
-        return c.json(apiTemplate(200, 'OK', { status: response.status, text: await response.text() }))
+        if ([404, 410].includes(response.status)) {
+            delete kv[uuid]
+            await saveKV(kvDBPath, kv)
+        }
+        return c.json(apiTemplate(response.status, 'OK', { status: response.status, text: await response.text() }))
     } catch (e) {
         log.error(e)
-        return c.json(apiTemplate(200, 'OK', 500))
+        return c.json(apiTemplate(500, 'Failed'))
     }
 })
 

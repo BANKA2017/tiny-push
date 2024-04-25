@@ -135,8 +135,7 @@ export const HKDF = async (key, ikm, info, length = -1) => {
     return (await HmacSHA256(tmpKey, info)).slice(0, length < 0 ? undefined : length)
 }
 
-export const GetAESGCMNonceAndCekAndContent = async (subscriptionPublicKeyStr, auth, eccKeyData, salt_) => {
-    // Convert subscription public key into a buffer.
+export const GetAESGCMNonceAndCekAndContent = async (subscriptionPublicKeyStr, auth, eccKeyData, salt) => {
     const subscriptionPublicKeyBuffer = new Uint8Array(base64_to_buffer(base64url_to_base64(subscriptionPublicKeyStr)))
     const subscriptionPublicKey = await crypto.subtle.importKey(
         'raw',
@@ -151,14 +150,10 @@ export const GetAESGCMNonceAndCekAndContent = async (subscriptionPublicKeyStr, a
     const ecdh_secret = await ECDH(subscriptionPublicKey, eccKeyData.privateKey)
 
     const publishPublicKeyBuffer = await crypto.subtle.exportKey('raw', eccKeyData.publicKey)
-    //log.log(base64_to_base64url(buffer_to_base64(ecdh_secret)))
-    // context
-    // https://web.dev/articles/push-notifications-web-push-protocol#context
-
-    const context = concatBuffer(new TextEncoder().encode('P-256\0'), new Uint8Array([0, 65]), subscriptionPublicKeyBuffer, new Uint8Array([0, 65]), publishPublicKeyBuffer)
 
     const auth_secret = base64_to_buffer(base64url_to_base64(auth))
-    const salt = base64_to_buffer(base64url_to_base64(salt_))
+
+    const context = concatBuffer(new TextEncoder().encode('P-256\0'), new Uint8Array([0, 65]), subscriptionPublicKeyBuffer, new Uint8Array([0, 65]), publishPublicKeyBuffer)
 
     const auth_info = new TextEncoder().encode('Content-Encoding: auth\0')
     const PRK_combine = await HmacSHA256(auth_secret, ecdh_secret)
@@ -169,11 +164,49 @@ export const GetAESGCMNonceAndCekAndContent = async (subscriptionPublicKeyStr, a
     let cek = (await HmacSHA256(PRK, concatBuffer(cek_info, new Uint8Array([1])))).slice(0, 16)
     const nonce_info = concatBuffer(new TextEncoder().encode('Content-Encoding: nonce\0'), context)
     let nonce = (await HmacSHA256(PRK, concatBuffer(nonce_info, new Uint8Array([1])))).slice(0, 12)
-    return { nonce, cek, content: context }
+    return { nonce, cek, context }
 }
 
-export const Encrypt = async (nonce, contentEncryptionKey, content) => {
+export const GetAES128GCMNonceAndCekAndContent = async (subscriptionPublicKeyStr, auth, eccKeyData, salt) => {
+    const subscriptionPublicKeyBuffer = new Uint8Array(base64_to_buffer(base64url_to_base64(subscriptionPublicKeyStr)))
+    const subscriptionPublicKey = await crypto.subtle.importKey(
+        'raw',
+        subscriptionPublicKeyBuffer,
+        {
+            name: 'ECDH',
+            namedCurve: 'P-256'
+        },
+        true,
+        []
+    )
+    const ecdh_secret = await ECDH(subscriptionPublicKey, eccKeyData.privateKey)
+
+    const publishPublicKeyBuffer = await crypto.subtle.exportKey('raw', eccKeyData.publicKey)
+
+    const auth_secret = base64_to_buffer(base64url_to_base64(auth))
+
+    const key_info = concatBuffer(new TextEncoder('utf-8').encode('WebPush: info\0'), subscriptionPublicKeyBuffer, publishPublicKeyBuffer)
+
+    const PRK_key = await HmacSHA256(auth_secret, ecdh_secret)
+
+    let IKM = await HmacSHA256(PRK_key, concatBuffer(key_info, new Uint8Array([1]).buffer))
+    let PRK = await HmacSHA256(salt, IKM)
+    let cek_info = new TextEncoder('utf-8').encode('Content-Encoding: aes128gcm\0')
+    let contentEncryptionKey = (await HmacSHA256(PRK, concatBuffer(cek_info, new Uint8Array([1]).buffer))).slice(0, 16)
+    let nonce_info = new TextEncoder('utf-8').encode('Content-Encoding: nonce\0')
+    let nonce = (await HmacSHA256(PRK, concatBuffer(nonce_info, new Uint8Array([1]).buffer))).slice(0, 12)
+
+    return { nonce, cek: contentEncryptionKey, context: key_info }
+}
+
+export const Encrypt = async (nonce, contentEncryptionKey, content, encoding = 'aesgcm') => {
     const cek = await crypto.subtle.importKey('raw', contentEncryptionKey, 'AES-GCM', true, ['encrypt', 'decrypt'])
-    let encodedBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, cek, concatBuffer(new Uint8Array([0, 0]), content))
+    let payload
+    if (encoding === 'aes128gcm') {
+        payload = concatBuffer(content, new Uint8Array([2]))
+    } else {
+        payload = concatBuffer(new Uint8Array([0, 0]), content)
+    }
+    let encodedBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, cek, payload)
     return encodedBuffer
 }
