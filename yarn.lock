@@ -5,10 +5,10 @@ __metadata:
   version: 6
   cacheKey: 8
 
-"@hono/node-server@npm:^1.10.0":
-  version: 1.10.0
-  resolution: "@hono/node-server@npm:1.10.0"
-  checksum: d6ed27c41cf3fd10873cd3c927c3459ed9d596d28e4870ad145660e6783f0de9109ec0fe97b45ba55844c6fb41acb748005cff76cdbd78a944a98179489d3cba
+"@hono/node-server@npm:^1.11.0":
+  version: 1.11.0
+  resolution: "@hono/node-server@npm:1.11.0"
+  checksum: 6850645a27828f8b366349fd24913009770055c41a8805b087c81873fede568d2cc6cb91f222eaaadd60374eee98d88c0fe6bdebf14a18a1d2b5bba52e717aa5
   languageName: node
   linkType: hard
 
@@ -28,21 +28,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hono@npm:^4.2.4":
-  version: 4.2.4
-  resolution: "hono@npm:4.2.4"
-  checksum: 72f313684c8b309a5a811e75e8a5dee0d4d7a68dfc0f22a34084eaeab25c08f6c62f49b8f0bdca808c64466f237e6c32ac06e5e134116534a5582aa45c789d8c
+"hono@npm:^4.2.7":
+  version: 4.2.7
+  resolution: "hono@npm:4.2.7"
+  checksum: 18ce3c2cd39a7fd91cfa812ceaf2e9bfeeed29399f3316c7b5c954c68b2b7adb8a21582da52aaf85dc2e24dff6b47d3eb9592e7989f330ca7572de9248b4f710
   languageName: node
   linkType: hard
 
-"push@workspace:.":
+"tiny-push@workspace:.":
   version: 0.0.0-use.local
-  resolution: "push@workspace:."
+  resolution: "tiny-push@workspace:."
   dependencies:
-    "@hono/node-server": ^1.10.0
+    "@hono/node-server": ^1.11.0
     "@types/node": ^20.12.7
     consola: ^3.2.3
-    hono: ^4.2.4
+    hono: ^4.2.7
   languageName: unknown
   linkType: soft
 
