@@ -86,7 +86,7 @@ app.post('/api/subscribe/', async (c) => {
         max--
     }
     if (max <= -1) {
-        console.error('Failed to generate uuid')
+        log.error('Failed to generate uuid')
         return c.json(apiTemplate(500, 'Failed to generate uuid', { uuid }))
     }
     kv[uuid] = {
