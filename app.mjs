@@ -1,6 +1,5 @@
 /**
  * kd_push
- * We back now~
  */
 
 import { serve } from '@hono/node-server'
@@ -13,11 +12,17 @@ import { readFileSync } from 'node:fs'
 import { base64_to_base64url, buffer_to_base64, BuildJWT, Encrypt, GetAESGCMNonceAndCekAndContent, GetAES128GCMNonceAndCekAndContent, GetPublicKey, Sign, concatBuffer } from './libs/crypto.mjs'
 import { saveKV } from './libs/db.mjs'
 import { VAPID as vapidObject } from './db/vapid.mjs'
+import { fileURLToPath } from 'node:url'
+import { dirname } from 'node:path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
 const apiTemplate = (code = 403, message = 'Invalid Request', data = {}, version = 'push') => {
     return { code, message, data, version }
 }
 
-const kvDBPath = './db/kv.json'
+const kvDBPath = __dirname + '/db/kv.json'
 
 log.info('', 'loading db from', kvDBPath)
 let kv = JSON.parse(readFileSync(kvDBPath, 'utf-8'))
@@ -43,7 +48,7 @@ app.use('*', async (c, next) => {
 
 app.use('/*', serveStatic({ root: './public' }))
 
-app.get('/vapid', async (c) => {
+app.get('/api/vapid', async (c) => {
     return c.json(
         apiTemplate(200, 'OK', {
             vapid: GetPublicKey(vapidObject.key)
@@ -51,8 +56,8 @@ app.get('/vapid', async (c) => {
     )
 })
 
-app.put('/subscribe/', async (c) => {
-    const uuid = crypto.randomUUID()
+app.post('/api/subscribe/', async (c) => {
+    let uuid = crypto.randomUUID()
 
     let query = new Map()
     try {
@@ -71,9 +76,19 @@ app.put('/subscribe/', async (c) => {
         new URL(endpoint).origin
     } catch (e) {
         log.error(e)
-        return c.json(apiTemplate(403, 'Invalid endpoint', { uuid }))
+        return c.json(apiTemplate(401, 'Invalid endpoint', { uuid }))
     }
 
+    let max = 10
+
+    while (kv[uuid] && max >= -1) {
+        uuid = crypto.randomUUID()
+        max--
+    }
+    if (max <= -1) {
+        console.error('Failed to generate uuid')
+        return c.json(apiTemplate(500, 'Failed to generate uuid', { uuid }))
+    }
     kv[uuid] = {
         endpoint,
         auth,
@@ -88,7 +103,7 @@ app.put('/subscribe/', async (c) => {
     await saveKV(kvDBPath, kv)
 
     return c.json(apiTemplate(200, 'OK', { uuid }))
-}).delete('/subscribe/:uuid', async (c) => {
+}).delete('/api/subscribe/:uuid', async (c) => {
     const uuid = c.req.param('uuid')
     if (kv[uuid]) {
         delete kv[uuid]
@@ -97,7 +112,7 @@ app.put('/subscribe/', async (c) => {
     return c.json(apiTemplate(200, 'OK', true))
 })
 
-app.post('/push/:uuid?', async (c) => {
+app.post('/api/push/:uuid?', async (c) => {
     const uuid = c.req.param('uuid')
 
     let query = new Map()
@@ -174,7 +189,7 @@ app.post('/push/:uuid?', async (c) => {
 
     const eccPublicKey = await crypto.subtle.exportKey('raw', eccKeyData.publicKey)
 
-    const content = message ? message : 'Hello, here is **TinyPush**!\n\nThis is a test content\n\n中日한🔔✅🎉😺1️⃣2️⃣3️⃣4️⃣5️⃣\n\n[a link](https://push.nest.moe)? or <https://push.nest.moe>\n\n' + new Date() + ' ' + Date.now()
+    const content = message ? message : 'This is a test content🔔✅🎉😺\n' + new Date() + ' (' + Date.now() + ')'
     const timestamp = Date.now()
 
     const signPayload = new URLSearchParams({ content, timestamp: String(timestamp) }).toString()
@@ -214,10 +229,6 @@ app.post('/push/:uuid?', async (c) => {
         return c.json(apiTemplate(500, 'Failed'))
     }
 })
-
-// app.get('/ws', async (c) => {
-//     return c.json(apiTemplate())
-// })
 
 app.all('*', async (c) => {
     return c.json(apiTemplate())

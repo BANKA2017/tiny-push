@@ -123,13 +123,13 @@
                     </div>
                     <div class="d-flex justify-content-end">
                         <button v-if="!message?.sign?.startsWith('build-in:')" class="btn btn-sm" style="width: 2rem; height: 2rem" @click="modifyBookmarks">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" class="bi bi-markdown-fill" viewBox="0 0 16 16">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" viewBox="0 0 16 16">
                                 <path v-if="bookmarks.some(x => (message.content === x.content) && (message.timestamp === x.timestamp))" d="M2 2v13.5a.5.5 0 0 0 .74.439L8 13.069l5.26 2.87A.5.5 0 0 0 14 15.5V2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2" />
                                 <path v-else d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1z" />
                             </svg>
                         </button>
                         <button class="btn btn-sm" style="width: 2rem; height: 2rem" @click="message.originalMode=!message.originalMode">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" class="bi bi-markdown-fill" viewBox="0 0 16 16">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" viewBox="0 0 16 16">
                                 <path v-if="message.originalMode" d="M14 3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM2 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
                                 <path v-if="message.originalMode" fill-rule="evenodd" d="M9.146 8.146a.5.5 0 0 1 .708 0L11.5 9.793l1.646-1.647a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 0-.708" />
                                 <path v-if="message.originalMode" fill-rule="evenodd" d="M11.5 5a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 1 .5-.5" />
@@ -141,10 +141,10 @@
                             </svg>
                         </button>
                         <button class="btn btn-sm ms-1" style="width: 2rem; height: 2rem" @click="writeClipboardText(message.content, 'message')">
-                            <svg v-if="copied.message" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check2" viewBox="0 0 16 16">
+                            <svg v-if="copied.message" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0" />
                             </svg>
-                            <svg v-else xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z" />
                                 <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z" />
                             </svg>
@@ -227,7 +227,7 @@
                 </div>
             </div>
             <button class="btn btn-sm btn-danger" style="position: fixed; right: 4vw; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')" v-if="route[0] !== 'main'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
+                <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
                 </svg>
             </button>
@@ -346,7 +346,7 @@
                         this.routerCase(event.target.location.hash)
                     })
 
-                    fetch(endpoint + '/vapid')
+                    fetch(endpoint + '/api/vapid')
                         .then((res) => res.json())
                         .then(async (res) => {
                             this.vapid = res.data.vapid
@@ -429,11 +429,11 @@
                                 })
                                 .then((sub) => {
                                     sub = sub.toJSON()
-                                    fetch(endpoint + '/subscribe/', {
+                                    fetch(endpoint + '/api/subscribe/', {
                                         headers: {
                                             'content-type': 'application/x-www-form-urlencoded'
                                         },
-                                        method: 'PUT',
+                                        method: 'POST',
                                         body: new URLSearchParams({
                                             endpoint: sub.endpoint,
                                             p256dh: sub.keys.p256dh,
@@ -465,22 +465,23 @@
                                 .getSubscription()
                                 .then((subscription) => {
                                     subscription.unsubscribe().then((successful) => {
-                                        if (this.uuid) {
-                                            fetch(endpoint + '/subscribe/' + this.uuid, {
-                                                headers: {
-                                                    'content-type': 'application/x-www-form-urlencoded'
-                                                },
-                                                method: 'DELETE'
-                                            })
-                                                .then((res) => res.json())
-                                                .then((res) => {
-                                                    //console.log(res)
-                                                })
-                                                .catch((e) => {
-                                                    console.error(res)
-                                                })
-                                        }
+                                        //?
                                     })
+                                    if (this.uuid) {
+                                        fetch(endpoint + '/api/subscribe/' + this.uuid, {
+                                            headers: {
+                                                'content-type': 'application/x-www-form-urlencoded'
+                                            },
+                                            method: 'DELETE'
+                                        })
+                                            .then((res) => res.json())
+                                            .then((res) => {
+                                                // console.log(res)
+                                            })
+                                            .catch((e) => {
+                                                console.error(res)
+                                            })
+                                    }
                                     localStorage.removeItem('push:uuid')
                                     this.uuid = ''
                                     this.pushStatus = 'default'
@@ -522,7 +523,7 @@
                             return
                         }
                         this.push_status = 1
-                        fetch(endpoint + '/push/' + this.uuid, {
+                        fetch(endpoint + '/api/push/' + this.uuid, {
                             headers: {
                                 'content-type': 'application/x-www-form-urlencoded'
                             },

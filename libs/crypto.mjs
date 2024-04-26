@@ -18,7 +18,14 @@ export let GlobalJWT = {}
 
 export const GetPrivateKey = (jwk) => jwk.d
 
-export const GetPublicKey = (jwk) => base64_to_base64url(buffer_to_base64(concatBuffer(new Uint8Array([4]).buffer, base64_to_buffer(base64url_to_base64(jwk.x)), base64_to_buffer(base64url_to_base64(jwk.y)))))
+let publicKeyCache = ''
+
+export const GetPublicKey = (jwk) => {
+    if (!publicKeyCache) {
+        publicKeyCache = base64_to_base64url(buffer_to_base64(concatBuffer(new Uint8Array([4]).buffer, base64_to_buffer(base64url_to_base64(jwk.x)), base64_to_buffer(base64url_to_base64(jwk.y)))))
+    }
+    return publicKeyCache
+}
 
 export const BuildJWT = async (vapidObject = {}, aud = '') => {
     const now = Date.now()
