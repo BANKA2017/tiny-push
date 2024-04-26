@@ -25,18 +25,21 @@
             .hover-underline:hover {
                 text-decoration-line: underline;
             }
+            .bookmark-preview-width {
+                max-width: 50%;
+            }
+            @media (max-width: 768.01px) {
+                .bookmark-preview-width {
+                    max-width: 100%;
+                }
+            }
         </style>
     </head>
 
-    <body style="display: flex; justify-content: center; height: 90vh; margin: 20px; flex-direction: column">
-        <div id="app" class="d-flex justify-content-center" style="overflow-y: auto">
+    <body style="display: flex; justify-content: center; min-height: 100vh; padding: 20px; flex-direction: column; overflow-y: auto">
+        <div id="app" class="d-flex justify-content-center">
             <div style="max-width: 600px; width: 95vw">
                 <div v-if="message.content" style="padding-top: 5rem; padding-bottom: 2rem">
-                    <button class="btn btn-sm btn-danger" style="position: fixed; right: 4vw; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
-                            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
-                        </svg>
-                    </button>
                     <div class="mb-2">
                         <div class="d-flex justify-content-between">
                             <em class="lead" v-if="messageDate" :title="message.timestamp">{{ messageDate }}</em>
@@ -153,9 +156,9 @@
                         <span>Bookmarks</span>
                     </h1>
                     <template v-for="(bookmark, i) in bookmarks" :key="bookmark.content + '-' + bookmark.timestamp">
-                        <button class="d-flex justify-content-between btn btn-dark" style="width: 100%" @click="pushToPreview(bookmark)">
-                            <span>{{ parseDate(bookmark.timestamp) }}</span>
-                            <span>{{ [...bookmark.content].slice(0, 20).join('') }}...</span>
+                        <button class="d-flex flex-column flex-md-row justify-content-between btn btn-dark" style="width: 100%" @click="pushToPreview(bookmark)">
+                            <div class="text-truncate bookmark-preview-width">{{ bookmark.content }}</div>
+                            <div>{{ parseDate(bookmark.timestamp) }}</div>
                         </button>
                     </template>
                 </div>
@@ -216,12 +219,18 @@
                         </details>
                         <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="sendPush" style="width: 100%">PUSH!</button>
                     </details>
-                    <p class="text-end">
+                    <p class="text-end mt-5">
                         <span @click="pushState({ name: 'bookmarks' }, './#/bookmarks')" role="button" class="me-2 hover-underline">#bookmarks</span>
-                        <span @click="pushState({ name: 'help' }, './#/help')" role="button" class="me-2 hover-underline">#help</span> <span @click="pushState({ name: 'about' }, './#/about')" class="hover-underline" role="button">#about</span>
+                        <span @click="pushState({ name: 'help' }, './#/help')" role="button" class="me-2 hover-underline">#help</span>
+                        <span @click="pushState({ name: 'about' }, './#/about')" class="hover-underline" role="button">#about</span>
                     </p>
                 </div>
             </div>
+            <button class="btn btn-sm btn-danger" style="position: fixed; right: 4vw; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')" v-if="route[0] !== 'main'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
+                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
+                </svg>
+            </button>
         </div>
         <!--load css and js-->
         <script src="https://cdn.jsdelivr.net/npm/vue@3.4.24/dist/vue.global.prod.js" integrity="sha256-NuLZKbx8rSWxfBrjvEqgCUKQ+dIBM3WUKEOAqw/NfIw=" crossorigin="anonymous"></script>
@@ -311,8 +320,13 @@
                                 break
                             case 'import':
                                 break
-                            case 'main':
                             case 'bookmarks':
+                                try {
+                                    this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
+                                } catch (e) {
+                                    console.error(e)
+                                }
+                            case 'main':
                                 this.message = { content: '', sign: '', verify: false, timestamp: 0 }
                                 break
                         }
@@ -324,11 +338,6 @@
                     this.updateNotifitionPermission()
                     this.subscribeStatus()
                     this.uuid = localStorage.getItem('push:uuid') || ''
-                    try {
-                        this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
-                    } catch (e) {
-                        console.error(e)
-                    }
 
                     this.routerCase(location.hash)
                     addEventListener('popstate', (event) => {
@@ -694,6 +703,11 @@
                         }
                     },
                     modifyBookmarks: function () {
+                        try {
+                            this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
+                        } catch (e) {
+                            console.error(e)
+                        }
                         const index = this.bookmarks.findIndex((x) => this.message.content === x.content && this.message.timestamp === x.timestamp)
                         if (index === -1) {
                             this.bookmarks.unshift({
