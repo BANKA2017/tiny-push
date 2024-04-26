@@ -1,7 +1,10 @@
 {
-    "name": "push",
+    "name": "tiny-push",
+    "version": "0.0.1",
     "packageManager": "yarn@3.4.1",
     "type": "module",
+    "private": true,
+    "license": "MIT",
     "dependencies": {
         "@hono/node-server": "^1.10.0",
         "consola": "^3.2.3",
