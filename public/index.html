@@ -108,7 +108,7 @@
                                 <hr v-else-if="paragraph?.type === 'line'" />
                                 <div v-else-if="paragraph?.type === 'image'" class="d-flex justify-content-center">
                                     <div class="text-center">
-                                        <img :alt="paragraph?.text" :src="paragraph?.ext?.src" :title="paragraph?.ext?.title" class="rounded" style="max-height: 20vh" @click="OpenNewPage(paragraph?.ext?.src)" role="button" />
+                                        <img :alt="paragraph?.text" :src="paragraph?.ext?.src" :title="paragraph?.ext?.title" class="rounded" style="max-height: 40vh; max-width: 100%; cursor: zoom-in" @click="OpenNewPage(paragraph?.ext?.src)" />
                                         <small class="text-body-secondary d-block" v-if="paragraph?.text">{{ paragraph?.text }}</small>
                                     </div>
                                 </div>
@@ -189,7 +189,7 @@
                     <p v-else-if="pushStatus === 'denied'" class="text-center">Please allow the browser to use notification.</p>
                     <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
 
-                    <details v-if="['granted', 'default'].includes(pushStatus)">
+                    <details v-if="['granted', 'default'].includes(pushStatus)" :open="push_message.length">
                         <summary class="text-center">Send Message</summary>
                         <div class="mb-3 mt-2">
                             <label class="form-label" for="uuid">UUID</label>
@@ -225,6 +225,9 @@
                             </ul>
                             <hr />
                         </details>
+                        <button v-if="pushMessageByteLength > 0" class="btn btn-secondary mb-2" :disabled="pushMessageByteLength <= 0" @click="message = { content: push_message, sign: 'build-in:preview', verify: true}" style="width: 100%">
+                            Preview
+                        </button>
                         <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" :disabled="pushMessageByteLength <= 0" @click="sendPush" style="width: 100%">PUSH!</button>
                     </details>
                     <p class="text-end mt-5">
@@ -234,7 +237,7 @@
                     </p>
                 </div>
             </div>
-            <button class="btn btn-sm btn-danger" style="position: fixed; right: 4vw; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')" v-if="route[0] !== 'main'">
+            <button class="btn btn-sm btn-danger" style="position: fixed; right: 4vw; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')" v-if="route[0] !== 'main' || message.content !== ''">
                 <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
                 </svg>
