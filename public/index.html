@@ -189,7 +189,7 @@
                     <p v-else-if="pushStatus === 'denied'" class="text-center">Please allow the browser to use notification.</p>
                     <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
 
-                    <details v-if="['granted', 'default'].includes(pushStatus)" :open="push_message.length">
+                    <details v-if="['granted', 'default'].includes(pushStatus)" @toggle="(event) => {push_panel_open = event.newState === 'open'}" :open="push_panel_open">
                         <summary class="text-center">Send Message</summary>
                         <div class="mb-3 mt-2">
                             <label class="form-label" for="uuid">UUID</label>
@@ -257,6 +257,7 @@
                     push_message: '',
                     push_status: 0, // 0->idle, 1->sending, 2->success, 3->failed
                     push_logs: [],
+                    push_panel_open: false,
                     bookmarks: [],
                     message: {
                         content: '',
@@ -307,7 +308,7 @@
                         }
                         switch (newVal[0]) {
                             case 'preview':
-                                const hashContent = JSON.parse(atob(newVal[1]))
+                                const hashContent = JSON.parse(atob(this.base64url_to_base64(newVal[1])))
                                 const content = new TextDecoder('utf-8').decode(this.base64_to_buffer(this.base64url_to_base64(hashContent.content)))
                                 //console.log(hashContent, content)
                                 const signPayload = new URLSearchParams({ content, timestamp: String(hashContent?.timestamp || 0) }).toString()
@@ -768,7 +769,7 @@
                         }
                         this.pushState(
                             { name: 'preview' },
-                            './#/preview/' + btoa(JSON.stringify({ content: this.base64_to_base64url(this.buffer_to_base64(new TextEncoder().encode(message.content))), sign: message.sign, timestamp: message.timestamp }))
+                            './#/preview/' + this.base64_to_base64url(btoa(JSON.stringify({ content: this.base64_to_base64url(this.buffer_to_base64(new TextEncoder().encode(message.content))), sign: message.sign, timestamp: message.timestamp })))
                         )
                     },
                     OpenNewPage: (url = '') => {

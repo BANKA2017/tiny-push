@@ -27,7 +27,13 @@ self.addEventListener(
             binary += String.fromCharCode(bytes[i])
         }
 
-        clients.openWindow('/#/preview/' + btoa(JSON.stringify({ content: btoa(binary).replaceAll('/', '_').replaceAll('+', '-').replaceAll('=', ''), sign, timestamp })))
+        clients.openWindow(
+            '/#/preview/' +
+                btoa(JSON.stringify({ content: btoa(binary).replaceAll('/', '_').replaceAll('+', '-').replaceAll('=', ''), sign, timestamp }))
+                    .replaceAll('/', '_')
+                    .replaceAll('+', '-')
+                    .replaceAll('=', '')
+        )
     },
     false
 )
