@@ -203,6 +203,9 @@
                                 </div>
                                 <span v-else-if="push_status === 2">✅</span>
                                 <span v-else-if="push_status === 3">❌</span>
+                                <span v-else class="font-monospace" :style="{color: pushMessageByteLength >= push_message_maximum ? '#F4212E' : (push_message_maximum - pushMessageByteLength <= 20 ? '#F2CA03' : 'white')}"
+                                    >{{ pushMessageByteLength }}/{{ push_message_maximum }}</span
+                                >
                             </label>
                             <div class="input-group">
                                 <textarea rows="5" id="message" class="form-control" v-model="push_message" placeholder="New message..."></textarea>
@@ -216,7 +219,7 @@
                             </ul>
                             <hr />
                         </details>
-                        <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="sendPush" style="width: 100%">PUSH!</button>
+                        <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" :disabled="pushMessageByteLength <= 0" @click="sendPush" style="width: 100%">PUSH!</button>
                     </details>
                     <p class="text-end mt-5">
                         <span @click="pushState({ name: 'bookmarks' }, './#/bookmarks')" role="button" class="me-2 hover-underline">#bookmarks</span>
@@ -241,6 +244,7 @@
                     pushStatus: '',
                     vapid: '',
                     uuid: '',
+                    push_message_maximum: 3500, // This is just a recommended length, a small amount exceeding is ok
                     push_message: '',
                     push_status: 0, // 0->idle, 1->sending, 2->success, 3->failed
                     push_logs: [],
@@ -273,6 +277,12 @@
                             return ''
                         }
                         return this.parseDate(this.message.timestamp)
+                    },
+                    pushMessageByteLength() {
+                        if (this.push_message === '') {
+                            return 0
+                        }
+                        return new TextEncoder().encode(this.push_message).byteLength
                     }
                 },
                 watch: {
