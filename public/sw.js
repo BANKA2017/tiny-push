@@ -7,8 +7,8 @@ self.addEventListener('push', (event) => {
     if (message) {
         self.registration.showNotification('TinyPush', {
             body: message?.content || '',
-            icon: '/icon.png',
-            badge: '/favicon.ico',
+            icon: '/icon_small.png',
+            badge: '/icon_small.png',
             data: message,
             timestamp: message.timestamp,
             tag: 'message-' + message.timestamp
