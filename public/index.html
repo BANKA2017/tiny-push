@@ -214,7 +214,7 @@
                                 >
                             </label>
                             <div class="input-group">
-                                <textarea rows="5" id="message" class="form-control" v-model="push_message" placeholder="New message..."  :dir="isRtlUnicode(push_message.trim().charCodeAt(0)) ? 'rtl' : 'ltr'"></textarea>
+                                <textarea rows="5" id="message" class="form-control" v-model="push_message" placeholder="New message..." :dir="isRtlUnicode(push_message.trim().charCodeAt(0)) ? 'rtl' : 'ltr'"></textarea>
                             </div>
                         </div>
                         <hr />
@@ -246,6 +246,17 @@
         <!--load css and js-->
         <script src="https://cdn.jsdelivr.net/npm/vue@3.4.24/dist/vue.global.prod.js" integrity="sha256-NuLZKbx8rSWxfBrjvEqgCUKQ+dIBM3WUKEOAqw/NfIw=" crossorigin="anonymous"></script>
         <script>
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker
+                    .register('./sw.js')
+                    .then((reg) => {
+                        //console.log('register a service worker: ', reg)
+                    })
+                    .catch((err) => {
+                        console.error('err: ', err)
+                    })
+            }
+
             const endpoint = '.'
             const { createApp } = Vue
             createApp({
@@ -777,12 +788,12 @@
                     },
                     isRtlUnicode: function (codePoint) {
                         const rtlUnicodeRanges = [
-                            [0x0590, 0x05FF], // he
-                            [0x0600, 0x06FF], // ar
-                            [0x0700, 0x08FF], // others
-                            [0xFB1D, 0xFDFF], // he
-                            [0xFE70, 0xFEFF], // ar
-                            [0x10800, 0x10FFF] // arc
+                            [0x0590, 0x05ff], // he
+                            [0x0600, 0x06ff], // ar
+                            [0x0700, 0x08ff], // others
+                            [0xfb1d, 0xfdff], // he
+                            [0xfe70, 0xfeff], // ar
+                            [0x10800, 0x10fff] // arc
                         ]
                         for (const [start, end] of rtlUnicodeRanges) {
                             if (codePoint >= start && codePoint <= end) {
@@ -793,18 +804,6 @@
                     }
                 }
             }).mount('#app')
-        </script>
-        <script async>
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker
-                    .register('./sw.js')
-                    .then((reg) => {
-                        //console.log('register a service worker: ', reg)
-                    })
-                    .catch((err) => {
-                        console.error('err: ', err)
-                    })
-            }
         </script>
     </body>
 </html>
