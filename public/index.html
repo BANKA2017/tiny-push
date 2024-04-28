@@ -65,10 +65,10 @@
                     </div>
                     <div :title="message.content">
                         <template v-if="message.originalMode">
-                            <p class="text-break" v-for="(_message, i) in message.content.trim().split('\n')" :key="i">{{ _message }}</p>
+                            <p class="text-break" v-for="(_message, i) in message.content.trim().split('\n')" :key="i" :dir="isRtlUnicode(_message.trim().charCodeAt(0)) ? 'rtl' : 'ltr'">{{ _message }}</p>
                         </template>
                         <template v-else>
-                            <div v-for="paragraph in messageObject" :key="'paragraph-'+paragraph" class="my-2 text-break">
+                            <div v-for="paragraph in messageObject" :key="'paragraph-'+paragraph" class="my-2 text-break" :dir="isRtlUnicode((paragraph?.text || '').trim().charCodeAt(0)) ? 'rtl' : 'ltr'">
                                 <component :is="'h' + paragraph?.ext?.level" v-if="paragraph?.type === 'heading'">
                                     <template v-for="node in paragraph.nodes" :key="node.text">
                                         <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
@@ -194,7 +194,7 @@
                         <div class="mb-3 mt-2">
                             <label class="form-label" for="uuid">UUID</label>
                             <div class="input-group">
-                                <input id="uuid" type="text" class="form-control" v-model="uuid" aria-describedby="restore-uuid" />
+                                <input id="uuid" type="text" class="form-control" v-model="uuid" aria-describedby="restore-uuid" autocomplete="on" placeholder="UUID" required />
                                 <button class="btn btn-secondary" type="button" id="restore-uuid" @click="restoreUUID">Restore</button>
                             </div>
                             <div class="form-text" id="form-text-uuid">The message will be pushed to the device corresponding to the uuid</div>
@@ -214,7 +214,7 @@
                                 >
                             </label>
                             <div class="input-group">
-                                <textarea rows="5" id="message" class="form-control" v-model="push_message" placeholder="New message..."></textarea>
+                                <textarea rows="5" id="message" class="form-control" v-model="push_message" placeholder="New message..."  :dir="isRtlUnicode(push_message.trim().charCodeAt(0)) ? 'rtl' : 'ltr'"></textarea>
                             </div>
                         </div>
                         <hr />
@@ -774,6 +774,22 @@
                     },
                     OpenNewPage: (url = '') => {
                         window.open(url)
+                    },
+                    isRtlUnicode: function (codePoint) {
+                        const rtlUnicodeRanges = [
+                            [0x0590, 0x05FF], // he
+                            [0x0600, 0x06FF], // ar
+                            [0x0700, 0x08FF], // others
+                            [0xFB1D, 0xFDFF], // he
+                            [0xFE70, 0xFEFF], // ar
+                            [0x10800, 0x10FFF] // arc
+                        ]
+                        for (const [start, end] of rtlUnicodeRanges) {
+                            if (codePoint >= start && codePoint <= end) {
+                                return true
+                            }
+                        }
+                        return false
                     }
                 }
             }).mount('#app')

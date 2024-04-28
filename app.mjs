@@ -14,6 +14,8 @@ import { saveKV } from './libs/db.mjs'
 import { VAPID as vapidObject } from './db/vapid.mjs'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
+// import { loadModule } from 'cld3-asm'
+// const TwitterCldr = require('twitter_cldr').load('en')
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -26,6 +28,9 @@ const kvDBPath = __dirname + '/db/kv.json'
 
 log.info('', 'loading db from', kvDBPath)
 let kv = JSON.parse(readFileSync(kvDBPath, 'utf-8'))
+
+// log.info('', 'loading cld3 module')
+// const cld3Module = await loadModule()
 
 setInterval(async () => {
     const now = Date.now()
@@ -189,7 +194,13 @@ app.post('/api/push/:uuid?', async (c) => {
 
     const eccPublicKey = await crypto.subtle.exportKey('raw', eccKeyData.publicKey)
 
-    const content = message ? message : 'This is a test content🔔✅🎉😺\n' + new Date() + ' (' + Date.now() + ')'
+    let content = message ? message : 'This is a test content🔔✅🎉😺\n' + new Date() + ' (' + Date.now() + ')'
+    // const identifier = cld3Module.create(0, 1000)
+    // const lang = identifier.findLanguage(content)
+    // identifier.dispose()
+
+    // content = TwitterCldr.Bidi.from_string(content, { direction: 'RTL' }).toString()
+
     const timestamp = Date.now()
 
     const signPayload = new URLSearchParams({ content, timestamp: String(timestamp) }).toString()
