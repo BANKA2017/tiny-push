@@ -228,7 +228,7 @@
                         <button v-if="pushMessageByteLength > 0" class="btn btn-secondary mb-2" :disabled="pushMessageByteLength <= 0" @click="message = { content: push_message, sign: 'build-in:preview', verify: true}" style="width: 100%">
                             Preview
                         </button>
-                        <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" :disabled="pushMessageByteLength <= 0" @click="sendPush" style="width: 100%">PUSH!</button>
+                        <button class="btn btn-danger mb-2" :disabled="pushMessageByteLength <= 0" @click="sendPush" style="width: 100%">PUSH!</button>
                     </details>
                     <p class="text-end mt-5">
                         <span @click="pushState({ name: 'bookmarks' }, './#/bookmarks')" role="button" class="me-2 hover-underline">#bookmarks</span>
