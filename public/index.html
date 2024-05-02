@@ -186,10 +186,10 @@
                     <button v-if="pushStatus === 'default'" class="btn btn-primary mb-2" @click="initPushConfig" style="width: 100%">Subscribe</button>
                     <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="unSubscribe" style="width: 100%">Unsubscribe</button>
                     <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.</p>
-                    <p v-else-if="pushStatus === 'denied'" class="text-center">Please allow the browser to use notification.</p>
+                    <p v-else-if="pushStatus === 'denied'" class="text-center">To receive messages, please allow the browser to use notification.</p>
                     <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
 
-                    <details v-if="['granted', 'default'].includes(pushStatus)" @toggle="(event) => {push_panel_open = event.newState === 'open'}" :open="push_panel_open">
+                    <details @toggle="(event) => {push_panel_open = event.newState === 'open'}" :open="push_panel_open">
                         <summary class="text-center">Send Message</summary>
                         <div class="mb-3 mt-2">
                             <label class="form-label" for="uuid">UUID</label>
