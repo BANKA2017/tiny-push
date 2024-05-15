@@ -36,7 +36,7 @@ setInterval(async () => {
     const now = Date.now()
     const newKV = []
     for (const kvItem of Object.entries(kv)) {
-        if (now - kvItem[1].last_used <= 1000 * 60 * 60 * 24 * 10) {
+        if (now - kvItem[1].last_used <= 1000 * 60 * 60 * 24 * 30 * 6) {
             newKV.push(kvItem)
         }
     }
