@@ -2,13 +2,13 @@
 # Manual changes might be lost - proceed with caution!
 
 __metadata:
-  version: 6
-  cacheKey: 8
+  version: 8
+  cacheKey: 10
 
 "@hono/node-server@npm:^1.11.0":
   version: 1.11.0
   resolution: "@hono/node-server@npm:1.11.0"
-  checksum: 6850645a27828f8b366349fd24913009770055c41a8805b087c81873fede568d2cc6cb91f222eaaadd60374eee98d88c0fe6bdebf14a18a1d2b5bba52e717aa5
+  checksum: 10/b1845ea663b70513a65a76b92f660fc7d736cbeab2ea83b6044a6671bd1e2082b63b5a290c918bba16193b9e8d7e96f4a9dbec410861068e56f8b50d3959fb98
   languageName: node
   linkType: hard
 
@@ -16,8 +16,8 @@ __metadata:
   version: 20.12.7
   resolution: "@types/node@npm:20.12.7"
   dependencies:
-    undici-types: ~5.26.4
-  checksum: 7cc979f7e2ca9a339ec71318c3901b9978555257929ef3666987f3e447123bc6dc92afcc89f6347e09e07d602fde7d51bcddea626c23aa2bb74aeaacfd1e1686
+    undici-types: "npm:~5.26.4"
+  checksum: 10/b4a28a3b593a9bdca5650880b6a9acef46911d58cf7cfa57268f048e9a7157a7c3196421b96cea576850ddb732e3b54bc982c8eb5e1e5ef0635d4424c2fce801
   languageName: node
   linkType: hard
 
@@ -25,15 +25,15 @@ __metadata:
   version: 4.0.0
   resolution: "cld3-asm@npm:4.0.0"
   dependencies:
-    emscripten-wasm-loader: ^3.0.3
-  checksum: d3687ebebbe07ae49db086780f7a74f0014db534bb2a50827fd06b645daf78998250419aae9bb191074009552875906ee6e2ab18e8032065d3c02c982d6d1b84
+    emscripten-wasm-loader: "npm:^3.0.3"
+  checksum: 10/c4c60ab8e454c9561e3607dca0212016ea287dfd806adccb2386956787f448ec948a445a6fa632d63a4f584a7eda0b50be38336fb1492cf7df0cedc656e6754c
   languageName: node
   linkType: hard
 
 "consola@npm:^3.2.3":
   version: 3.2.3
   resolution: "consola@npm:3.2.3"
-  checksum: 32ec70e177dd2385c42e38078958cc7397be91db21af90c6f9faa0b16168b49b1c61d689338604bbb2d64370b9347a35f42a9197663a913d3a405bb0ce728499
+  checksum: 10/02972dcb048c337357a3628438e5976b8e45bcec22fdcfbe9cd17622992953c4d695d5152f141464a02deac769b1d23028e8ac87f56483838df7a6bbf8e0f5a2
   languageName: node
   linkType: hard
 
@@ -41,10 +41,10 @@ __metadata:
   version: 3.0.3
   resolution: "emscripten-wasm-loader@npm:3.0.3"
   dependencies:
-    getroot: ^1.0.0
-    nanoid: ^2.0.3
-    unixify: ^1.0.0
-  checksum: fdaf111b9f6a68bec08847dc15de4bf263758e3d7f16a8c98a83949a9b5837668e718e7c464a0afe2421946341df72c11e7933ccb85ea14f925fab2dd9d9079d
+    getroot: "npm:^1.0.0"
+    nanoid: "npm:^2.0.3"
+    unixify: "npm:^1.0.0"
+  checksum: 10/f3608d4b113f0e76ba1859d50713294fa4029a0c53802f19849b989fd58ec4cf2777168b88f6461cdb10c5b5e8e3000c653b0784c152c10e8e3f79a893474649
   languageName: node
   linkType: hard
 
@@ -52,22 +52,22 @@ __metadata:
   version: 1.0.0
   resolution: "getroot@npm:1.0.0"
   dependencies:
-    tslib: ^1.7.1
-  checksum: d6d4e1c8d0e3d21cd08e000a6bf2d619d1424a998f355d3eb15846cadc1394a63a7b20c5e334b1c2eaf93478c1b579acc24dc7b893c0e459e8e0815ad5185a8d
+    tslib: "npm:^1.7.1"
+  checksum: 10/d6d4e1c8d0e3d21cd08e000a6bf2d619d1424a998f355d3eb15846cadc1394a63a7b20c5e334b1c2eaf93478c1b579acc24dc7b893c0e459e8e0815ad5185a8d
   languageName: node
   linkType: hard
 
 "hono@npm:^4.2.7":
   version: 4.2.7
   resolution: "hono@npm:4.2.7"
-  checksum: 18ce3c2cd39a7fd91cfa812ceaf2e9bfeeed29399f3316c7b5c954c68b2b7adb8a21582da52aaf85dc2e24dff6b47d3eb9592e7989f330ca7572de9248b4f710
+  checksum: 10/ba4863eeb4ba602d9aa7f5ba83940d12cc3055c1078df4697f8b0f9726efbdd299dc7170e2b3a656c353359b0bc7a9f1287fae8ea904b760b5148b32df26ec37
   languageName: node
   linkType: hard
 
 "nanoid@npm:^2.0.3":
   version: 2.1.11
   resolution: "nanoid@npm:2.1.11"
-  checksum: 18cd14386816873849787eb4e65667021bfdeb019a8f14c74287c23594c67b7c0e8f42c7d69f6aedf05cd3d100f1ddc41184f9f9b6b17fbaea1c3ee3f0704eec
+  checksum: 10/cf2a2eedcf9d8893a4687f11743ccf8381f047bc2b3d3887a23721bbef8fe64c5759b9cba6eb945e40efeb4a7e7379b3417e4dc5f6cc03050322d2c24a7ff69b
   languageName: node
   linkType: hard
 
@@ -75,15 +75,15 @@ __metadata:
   version: 2.1.1
   resolution: "normalize-path@npm:2.1.1"
   dependencies:
-    remove-trailing-separator: ^1.0.1
-  checksum: 7e9cbdcf7f5b8da7aa191fbfe33daf290cdcd8c038f422faf1b8a83c972bf7a6d94c5be34c4326cb00fb63bc0fd97d9fbcfaf2e5d6142332c2cd36d2e1b86cea
+    remove-trailing-separator: "npm:^1.0.1"
+  checksum: 10/7e9cbdcf7f5b8da7aa191fbfe33daf290cdcd8c038f422faf1b8a83c972bf7a6d94c5be34c4326cb00fb63bc0fd97d9fbcfaf2e5d6142332c2cd36d2e1b86cea
   languageName: node
   linkType: hard
 
 "remove-trailing-separator@npm:^1.0.1":
   version: 1.1.0
   resolution: "remove-trailing-separator@npm:1.1.0"
-  checksum: d3c20b5a2d987db13e1cca9385d56ecfa1641bae143b620835ac02a6b70ab88f68f117a0021838db826c57b31373d609d52e4f31aca75fc490c862732d595419
+  checksum: 10/d3c20b5a2d987db13e1cca9385d56ecfa1641bae143b620835ac02a6b70ab88f68f117a0021838db826c57b31373d609d52e4f31aca75fc490c862732d595419
   languageName: node
   linkType: hard
 
@@ -91,33 +91,33 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "tiny-push@workspace:."
   dependencies:
-    "@hono/node-server": ^1.11.0
-    "@types/node": ^20.12.7
-    cld3-asm: ^4.0.0
-    consola: ^3.2.3
-    hono: ^4.2.7
-    twitter_cldr: ^2.3.0
+    "@hono/node-server": "npm:^1.11.0"
+    "@types/node": "npm:^20.12.7"
+    cld3-asm: "npm:^4.0.0"
+    consola: "npm:^3.2.3"
+    hono: "npm:^4.2.7"
+    twitter_cldr: "npm:^2.3.0"
   languageName: unknown
   linkType: soft
 
 "tslib@npm:^1.7.1":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
-  checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd
+  checksum: 10/7dbf34e6f55c6492637adb81b555af5e3b4f9cc6b998fb440dac82d3b42bdc91560a35a5fb75e20e24a076c651438234da6743d139e4feabf0783f3cdfe1dddb
   languageName: node
   linkType: hard
 
 "twitter_cldr@npm:^2.3.0":
   version: 2.3.0
   resolution: "twitter_cldr@npm:2.3.0"
-  checksum: ae106837724dd118f4616cddf7327124f28ad06c816a65db1ded82e4ca8d45b1568773c7ded4c699a152b9acc9b1cb135b2518180f17cdd1e02a539375947474
+  checksum: 10/eb488d0cac1023e12c3b4e4ef5a167da1e1ca2afef9312ea74e84e5561f2ecd4c56d82bd64d47b57dc0a5d90ea2d2914b17a9e9b497aa585d31c4f980504030d
   languageName: node
   linkType: hard
 
 "undici-types@npm:~5.26.4":
   version: 5.26.5
   resolution: "undici-types@npm:5.26.5"
-  checksum: 3192ef6f3fd5df652f2dc1cd782b49d6ff14dc98e5dced492aa8a8c65425227da5da6aafe22523c67f035a272c599bb89cfe803c1db6311e44bed3042fc25487
+  checksum: 10/0097779d94bc0fd26f0418b3a05472410408877279141ded2bd449167be1aed7ea5b76f756562cb3586a07f251b90799bab22d9019ceba49c037c76445f7cddd
   languageName: node
   linkType: hard
 
@@ -125,7 +125,7 @@ __metadata:
   version: 1.0.0
   resolution: "unixify@npm:1.0.0"
   dependencies:
-    normalize-path: ^2.1.1
-  checksum: 3be30e48579fc6c7390bd59b4ab9e745fede0c164dfb7351cf710bd1dbef8484b1441186205af6bcb13b731c0c88caf9b33459f7bf8c89e79c046e656ae433f0
+    normalize-path: "npm:^2.1.1"
+  checksum: 10/3be30e48579fc6c7390bd59b4ab9e745fede0c164dfb7351cf710bd1dbef8484b1441186205af6bcb13b731c0c88caf9b33459f7bf8c89e79c046e656ae433f0
   languageName: node
   linkType: hard
