@@ -17,5 +17,5 @@ CREATE UNIQUE INDEX IF NOT EXISTS "idx_channel_uuid" ON "channel" (
 DROP INDEX IF EXISTS "idx_channel_latest_used";
 CREATE INDEX "idx_channel_latest_used" ON "channel" (
 	"last_used"	ASC
-)
+);
 COMMIT;
