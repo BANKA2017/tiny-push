@@ -2,7 +2,7 @@
 
 ## init
 
--   Create a file in `/db/` named `kv.json` and fill by text `{}`
+-   Create a file in `/db/` named `tinypush.db` by file `tinypush.sql`
 -   Create a file in `/db/` named `vapid.mjs`
 
     ```javascript
@@ -22,7 +22,7 @@
     -   `sub`: your email
 
 -   Default port is `3002`, use env `TINYPUSH_PORT`
--   \* (Optional) replace `push.nest.moe` with your url
+-   replace `push.nest.moe` with your own domain <- self deploy
 
 ## then?
 
@@ -34,7 +34,7 @@ node app.mjs
 
 ## more...
 
--   `uuid` will expire 10 days after last use
+-   `uuid` will expire 90 days after last use
 -   It is not necessary to use `uuid` when providing `endpoint`, `p256dh` and `auth` directly
 
 ## API
@@ -111,6 +111,7 @@ node app.mjs
         }
         // failed
         /// `code !== 201`
+
 
         /// https://web.dev/articles/push-notifications-common-issues-and-reporting-bugs
         ```

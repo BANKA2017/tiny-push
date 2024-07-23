@@ -8,12 +8,12 @@ import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
 import { showRoutes } from 'hono/dev'
 import log from './libs/console.mjs'
-import { readFileSync } from 'node:fs'
 import { base64_to_base64url, buffer_to_base64, BuildJWT, Encrypt, GetAESGCMNonceAndCekAndContent, GetAES128GCMNonceAndCekAndContent, GetPublicKey, Sign, concatBuffer } from './libs/crypto.mjs'
-import { saveKV } from './libs/db.mjs'
+import { DeleteUUID, GetUUID, InsertUUID, UpdateUUID } from './libs/db.mjs'
 import { VAPID as vapidObject } from './db/vapid.mjs'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
+import sqlite3 from 'sqlite3'
 // import { loadModule } from 'cld3-asm'
 // const TwitterCldr = require('twitter_cldr').load('en')
 
@@ -24,24 +24,24 @@ const apiTemplate = (code = 403, message = 'Invalid Request', data = {}, version
     return { code, message, data, version }
 }
 
-const kvDBPath = __dirname + '/db/kv.json'
+const DBPath = __dirname + '/db/tinypush.db'
 
-log.info('', 'loading db from', kvDBPath)
-let kv = JSON.parse(readFileSync(kvDBPath, 'utf-8'))
+const preRun = 'PRAGMA journal_mode = WAL;PRAGMA busy_timeout = 5000;PRAGMA synchronous = NORMAL;PRAGMA cache_size = 100000;PRAGMA foreign_keys = true;PRAGMA temp_store = memory;'
+
+const DBctx = new sqlite3.Database(DBPath)
+DBctx.run(preRun)
+
+log.info('', 'loading db from', DBPath)
 
 // log.info('', 'loading cld3 module')
 // const cld3Module = await loadModule()
 
 setInterval(async () => {
-    const now = Date.now()
-    const newKV = []
-    for (const kvItem of Object.entries(kv)) {
-        if (now - kvItem[1].last_used <= 1000 * 60 * 60 * 24 * 30 * 6) {
-            newKV.push(kvItem)
+    DBctx.run('DELETE FROM channel WHERE last_used <= ?', Date.now() - 1000 * 60 * 60 * 24 * 30 * 3, (err) => {
+        if (err) {
+            log.error('', err)
         }
-    }
-    kv = Object.fromEntries(newKV)
-    await saveKV(kvDBPath, kv)
+    })
 }, 1000 * 60)
 
 const app = new Hono()
@@ -68,51 +68,55 @@ app.post('/api/subscribe/', async (c) => {
     try {
         query = await c.req.formData()
     } catch {
-        return c.json(apiTemplate(401, 'Invalid p256dh/auth/endpoint', { uuid }))
+        return c.json(apiTemplate(401, 'Invalid p256dh/auth/endpoint', { uuid: '' }))
     }
     const p256dh = query.get('p256dh')
     const endpoint = query.get('endpoint')
     const auth = query.get('auth')
 
     if (!(p256dh && auth && endpoint)) {
-        return c.json(apiTemplate(401, 'Invalid p256dh/auth/endpoint', { uuid }))
+        return c.json(apiTemplate(401, 'Invalid p256dh/auth/endpoint', { uuid: '' }))
     }
     try {
         new URL(endpoint).origin
     } catch (e) {
         log.error(e)
-        return c.json(apiTemplate(401, 'Invalid endpoint', { uuid }))
+        return c.json(apiTemplate(401, 'Invalid endpoint', { uuid: '' }))
     }
 
     let max = 10
 
-    while (kv[uuid] && max >= -1) {
+    while (
+        (await (async () => {
+            const res = await GetUUID(DBctx, uuid)
+            return res.data && res.err
+        })()) &&
+        max >= -1
+    ) {
         uuid = crypto.randomUUID()
         max--
     }
     if (max <= -1) {
         log.error('Failed to generate uuid')
-        return c.json(apiTemplate(500, 'Failed to generate uuid', { uuid }))
+        return c.json(apiTemplate(500, 'Failed to generate uuid', { uuid: '' }))
     }
-    kv[uuid] = {
-        endpoint,
-        auth,
-        p256dh,
-        uuid,
-        last_used: Date.now(),
-        count: 0
+    const err = await InsertUUID(DBctx, [uuid, endpoint, auth, p256dh, Date.now()])
+
+    if (err) {
+        log.error('', err)
+        return c.json(apiTemplate(500, 'Unable to insert UUID into database', { uuid: '' }))
     }
-
-    // log.log(kv)
-
-    await saveKV(kvDBPath, kv)
 
     return c.json(apiTemplate(200, 'OK', { uuid }))
 }).delete('/api/subscribe/:uuid', async (c) => {
     const uuid = c.req.param('uuid')
-    if (kv[uuid]) {
-        delete kv[uuid]
-        await saveKV(kvDBPath, kv)
+    if (uuid && uuid.split('-').length === 5) {
+        const err = await DeleteUUID(DBctx, uuid)
+        if (err) {
+            return c.json(apiTemplate(500, 'Unable to delete the UUID', false))
+        }
+    } else {
+        return c.json(apiTemplate(400, 'Invalid UUID', false))
     }
     return c.json(apiTemplate(200, 'OK', true))
 })
@@ -136,16 +140,20 @@ app.post('/api/push/:uuid?', async (c) => {
         return c.json(apiTemplate(403, 'Empty message', false))
     }
 
+    if (!uuid) {
+        return c.json(apiTemplate(403, 'Invalid UUID', false))
+    }
     if (!(endpoint && p256dh && auth)) {
-        if (kv[uuid]) {
-            p256dh = kv[uuid].p256dh
-            endpoint = kv[uuid].endpoint
-            auth = kv[uuid].auth
+        let { err, row } = await GetUUID(DBctx, uuid)
+        if (!err && row) {
+            p256dh = row.p256dh
+            endpoint = row.endpoint
+            auth = row.auth
 
-            kv[uuid].count++
-            kv[uuid].last_used = Date.now()
-
-            await saveKV(kvDBPath, kv)
+            err = await UpdateUUID(DBctx, { $uuid: uuid, $count: row.count + 1, $last_used: Date.now() })
+            if (err) {
+                log.error('', err)
+            }
         } else {
             return c.json(apiTemplate(401, 'Invalid p256dh/auth/endpoint', false))
         }
@@ -231,8 +239,10 @@ app.post('/api/push/:uuid?', async (c) => {
             body: payload
         })
         if ([404, 410].includes(response.status)) {
-            delete kv[uuid]
-            await saveKV(kvDBPath, kv)
+            const err = await DeleteUUID(DBctx, uuid)
+            if (err) {
+                log.error('', err)
+            }
         }
         return c.json(apiTemplate(response.status, 'OK', { status: response.status, text: await response.text() }))
     } catch (e) {
