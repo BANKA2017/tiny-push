@@ -12,10 +12,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hono/node-server@npm:^1.11.0":
-  version: 1.11.0
-  resolution: "@hono/node-server@npm:1.11.0"
-  checksum: 10/b1845ea663b70513a65a76b92f660fc7d736cbeab2ea83b6044a6671bd1e2082b63b5a290c918bba16193b9e8d7e96f4a9dbec410861068e56f8b50d3959fb98
+"@hono/node-server@npm:^1.12.2":
+  version: 1.12.2
+  resolution: "@hono/node-server@npm:1.12.2"
+  peerDependencies:
+    hono: ^4
+  checksum: 10/3ad0c982f3d2c7f69dbac6b8c2e2a3f898c3ce1e9bc4158154a2027d3517d2ddbc18417e9e9b5060bfc82af481ae80376656ccd9079048ed3af89a586e319617
   languageName: node
   linkType: hard
 
@@ -89,12 +91,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^20.12.7":
-  version: 20.12.7
-  resolution: "@types/node@npm:20.12.7"
+"@types/node@npm:^20.16.3":
+  version: 20.16.3
+  resolution: "@types/node@npm:20.16.3"
   dependencies:
-    undici-types: "npm:~5.26.4"
-  checksum: 10/b4a28a3b593a9bdca5650880b6a9acef46911d58cf7cfa57268f048e9a7157a7c3196421b96cea576850ddb732e3b54bc982c8eb5e1e5ef0635d4424c2fce801
+    undici-types: "npm:~6.19.2"
+  checksum: 10/3b14b8b3cb92adc7db69f8cf351e7b6b5001e5c7cdb07470943215afeafc2952ae588c918543784e8f8e975d43d609ce0c7bced91f1b8745f1669d6137adaabc
   languageName: node
   linkType: hard
 
@@ -637,10 +639,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hono@npm:^4.2.7":
-  version: 4.2.7
-  resolution: "hono@npm:4.2.7"
-  checksum: 10/ba4863eeb4ba602d9aa7f5ba83940d12cc3055c1078df4697f8b0f9726efbdd299dc7170e2b3a656c353359b0bc7a9f1287fae8ea904b760b5148b32df26ec37
+"hono@npm:^4.5.10":
+  version: 4.5.10
+  resolution: "hono@npm:4.5.10"
+  checksum: 10/e7a1ef0d7e103fc5c1e588123d07d4380493f003dbb17dff960e8757afc6f650db6e47a0cf0ff34bce1b4fd0ee074460d4bb996bad9a4d5b9476772e1c885ba5
   languageName: node
   linkType: hard
 
@@ -1589,11 +1591,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "tiny-push@workspace:."
   dependencies:
-    "@hono/node-server": "npm:^1.11.0"
-    "@types/node": "npm:^20.12.7"
+    "@hono/node-server": "npm:^1.12.2"
+    "@types/node": "npm:^20.16.3"
     cld3-asm: "npm:^4.0.0"
     consola: "npm:^3.2.3"
-    hono: "npm:^4.2.7"
+    hono: "npm:^4.5.10"
     sqlite3: "npm:^5.1.7"
     twitter_cldr: "npm:^2.3.0"
   languageName: unknown
@@ -1622,10 +1624,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici-types@npm:~5.26.4":
-  version: 5.26.5
-  resolution: "undici-types@npm:5.26.5"
-  checksum: 10/0097779d94bc0fd26f0418b3a05472410408877279141ded2bd449167be1aed7ea5b76f756562cb3586a07f251b90799bab22d9019ceba49c037c76445f7cddd
+"undici-types@npm:~6.19.2":
+  version: 6.19.8
+  resolution: "undici-types@npm:6.19.8"
+  checksum: 10/cf0b48ed4fc99baf56584afa91aaffa5010c268b8842f62e02f752df209e3dea138b372a60a963b3b2576ed932f32329ce7ddb9cb5f27a6c83040d8cd74b7a70
   languageName: node
   linkType: hard
 
