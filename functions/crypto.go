@@ -19,11 +19,6 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-type JWT struct {
-	Content string
-	Expire  int64
-}
-
 // ImportKey imports a JWK as an ECDSA private key.
 func ImportKey(_privateKey string) (*ecdsa.PrivateKey, error) {
 	dBytes, err := base64.RawURLEncoding.DecodeString(_privateKey)
@@ -115,71 +110,50 @@ func Sign(privateKey *ecdsa.PrivateKey, payload []byte) ([]byte, error) {
 
 func GenHMAC256(ciphertext, key []byte) []byte {
 	mac := hmac.New(sha256.New, key)
-	mac.Write([]byte(ciphertext))
-	hmac := mac.Sum(nil)
-	return hmac
+	mac.Write(ciphertext)
+	return mac.Sum(nil)
 }
 
-func GetAESGCMNonceAndCekAndContent(subscriptionPublicKey *ecdh.PublicKey, auth []byte, privateKey *ecdsa.PrivateKey, salt []byte) ([]byte, []byte, []byte) {
+func GetAESGCMNonceAndCekAndContent(subscriptionPublicKey *ecdh.PublicKey, auth_secret []byte, eccKeyData *ecdh.PrivateKey, salt []byte) ([]byte, []byte, []byte) {
 	subscriptionPublicKeyBuffer := subscriptionPublicKey.Bytes()
-	ecdhPrivateKey, _ := privateKey.ECDH()
-	ecdh_secret, _ := ecdhPrivateKey.ECDH(subscriptionPublicKey)
-	publishPublicKeyBuffer := ConcatBuffer([]byte{4}, privateKey.PublicKey.X.Bytes(), privateKey.PublicKey.Y.Bytes())
+	ecdh_secret, _ := eccKeyData.ECDH(subscriptionPublicKey)
+	publishPublicKeyBuffer := eccKeyData.PublicKey().Bytes()
 
-	auth_secret := auth
-
-	context := []byte("P-256\x00")
-	context = append(context, []byte{0, 65}...)
-	context = append(context, subscriptionPublicKeyBuffer...)
-	context = append(context, []byte{0, 65}...)
-	context = append(context, publishPublicKeyBuffer...)
+	context := ConcatBuffer([]byte("P-256\x00"), []byte{0, 65}, subscriptionPublicKeyBuffer, []byte{0, 65}, publishPublicKeyBuffer)
 
 	auth_info := []byte("Content-Encoding: auth\x00")
-	PRK_combine := GenHMAC256(ecdh_secret, auth_secret)
-	IKM := GenHMAC256(append(auth_info, 0x01), PRK_combine)
 
-	PRK := GenHMAC256(IKM, salt)
+	PRK := HKDF(auth_secret, ecdh_secret, auth_info, 32)
 
-	cek_info := []byte("Content-Encoding: aesgcm\x00")
-	cek_info = append(cek_info, context...)
-	cek := GenHMAC256(append(cek_info, 0x01), PRK)[0:16]
+	cek_info := append([]byte("Content-Encoding: aesgcm\x00"), context...)
+	cek := HKDF(salt, PRK, cek_info, 16)
 
-	nonce_info := []byte("Content-Encoding: nonce\x00")
-	nonce_info = append(nonce_info, context...)
-	nonce := GenHMAC256(append(nonce_info, 0x01), PRK)[0:12]
+	nonce_info := append([]byte("Content-Encoding: nonce\x00"), context...)
+	nonce := HKDF(salt, PRK, nonce_info, 12)
 
 	return nonce, cek, context
 }
 
-func GetAES128GCMNonceAndCekAndContent(subscriptionPublicKey *ecdh.PublicKey, auth []byte, privateKey *ecdsa.PrivateKey, salt []byte) ([]byte, []byte, []byte) {
+func GetAES128GCMNonceAndCekAndContent(subscriptionPublicKey *ecdh.PublicKey, auth_secret []byte, eccKeyData *ecdh.PrivateKey, salt []byte) ([]byte, []byte, []byte) {
 	subscriptionPublicKeyBuffer := subscriptionPublicKey.Bytes()
 
-	ecdhPrivateKey, _ := privateKey.ECDH()
-	ecdh_secret, _ := ecdhPrivateKey.ECDH(subscriptionPublicKey)
-	publishPublicKeyBuffer := ConcatBuffer([]byte{4}, privateKey.PublicKey.X.Bytes(), privateKey.PublicKey.Y.Bytes())
+	ecdh_secret, _ := eccKeyData.ECDH(subscriptionPublicKey)
+	publishPublicKeyBuffer := eccKeyData.PublicKey().Bytes()
 
-	auth_secret := auth
+	key_info := ConcatBuffer([]byte("WebPush: info\x00"), subscriptionPublicKeyBuffer, publishPublicKeyBuffer)
 
-	key_info := []byte("WebPush: info\x00")
-	key_info = append(key_info, subscriptionPublicKeyBuffer...)
-	key_info = append(key_info, publishPublicKeyBuffer...)
-
-	PRK_key := GenHMAC256(ecdh_secret, auth_secret)
-	IKM := GenHMAC256(append(key_info, 0x01), PRK_key)
-
-	PRK := GenHMAC256(IKM, salt)
+	PRK := HKDF(auth_secret, ecdh_secret, key_info, 32)
 
 	cek_info := []byte("Content-Encoding: aes128gcm\x00")
-	cek := GenHMAC256(append(cek_info, 0x01), PRK)[0:16]
+	cek := HKDF(salt, PRK, cek_info, 16)
 
 	nonce_info := []byte("Content-Encoding: nonce\x00")
-	nonce := GenHMAC256(append(nonce_info, 0x01), PRK)[0:12]
+	nonce := HKDF(salt, PRK, nonce_info, 12)
 
 	return nonce, cek, key_info
 }
 
-func Encrypt(nonce, contentEncryptionKey, content []byte, encoding string) []byte {
-
+func Encrypt(nonce, contentEncryptionKey, payload []byte, encoding string) []byte {
 	block, err := aes.NewCipher(contentEncryptionKey)
 	if err != nil {
 		return nil
@@ -189,17 +163,19 @@ func Encrypt(nonce, contentEncryptionKey, content []byte, encoding string) []byt
 		return nil
 	}
 
-	payload := []byte{}
-
 	if encoding == "aes128gcm" {
 		payload = append(payload, 0x02)
 	} else {
-		tmp := []byte("\x00\x00")
-		payload = append(tmp, payload...)
+		payload = append([]byte("\x00\x00"), payload...)
 	}
 
-	ciphertext := aead.Seal(nonce, nonce, payload, nil)
+	ciphertext := aead.Seal(nil, nonce, payload, nil)
 
 	return ciphertext
+}
 
+func HKDF(salt, ikm, info []byte, length int) []byte {
+	key := GenHMAC256(ikm, salt)
+	signature := GenHMAC256(ConcatBuffer(info, []byte{0x01}), key)
+	return signature[0:length]
 }

@@ -2,8 +2,6 @@ package api
 
 import (
 	"crypto/ecdh"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -21,6 +19,8 @@ import (
 )
 
 func ApiPush(c echo.Context) error {
+	now := functions.Now
+
 	_uuid := c.Param("uuid")
 
 	p256dh := c.FormValue("p256dh")
@@ -49,8 +49,9 @@ func ApiPush(c echo.Context) error {
 		auth = uuidData.Auth
 		endpoint = uuidData.Endpoint
 
+		uuidData.LastUsed = int32(now.UnixMilli())
 		uuidData.Count += 1
-		err = functions.UpdateUUID(*uuidData)
+		err = functions.UpdateUUID(uuidData)
 		if err != nil {
 			log.Println(err)
 		}
@@ -61,8 +62,6 @@ func ApiPush(c echo.Context) error {
 		return c.JSON(http.StatusOK, ApiTemplate(401, "Invalid UUID/p256dh/auth/endpoint", false, "push"))
 	}
 
-	now := functions.Now
-
 	parsedURL, _ := url.ParseRequestURI(endpoint)
 	aud := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
 	jwt, _ := functions.BuildJWT(share.ECCPrivateKey, aud, share.Vapid.Sub)
@@ -70,7 +69,7 @@ func ApiPush(c echo.Context) error {
 	decodedP256dh, _ := base64.RawURLEncoding.DecodeString(p256dh)
 	p256dhPublicKey, _ := ecdh.P256().NewPublicKey(decodedP256dh)
 
-	eccKeyData, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	eccKeyData, _ := ecdh.P256().GenerateKey(rand.Reader)
 
 	salt := make([]byte, 16)
 	rand.Read(salt)
@@ -85,7 +84,8 @@ func ApiPush(c echo.Context) error {
 	} else {
 		nonce, cek, _ = functions.GetAESGCMNonceAndCekAndContent(p256dhPublicKey, authBuffer, eccKeyData, salt)
 	}
-	eccPublicKey := functions.ConcatBuffer([]byte{4}, eccKeyData.PublicKey.X.Bytes(), eccKeyData.PublicKey.Y.Bytes())
+
+	eccPublicKey := eccKeyData.PublicKey().Bytes()
 
 	if message == "" {
 		message = fmt.Sprintf("This is a test content🔔✅🎉😺\n%s (%d)", now.String(), now.UnixMilli())
@@ -113,12 +113,12 @@ func ApiPush(c echo.Context) error {
 	headers["TTL"] = "60"
 
 	if isAES128GCM {
-		headers["Authorization"] = fmt.Sprintf("'vapid t=%s,k=%s", jwt, functions.GetPublicKey(share.ECCPrivateKey))
+		headers["Authorization"] = fmt.Sprintf("vapid t=%s,k=%s", jwt, functions.GetPublicKey(share.ECCPrivateKey))
 		payload = functions.ConcatBuffer(salt, []byte("\x00\x00\x16\x00"), []byte{65}, eccPublicKey, payload)
 		headers["Content-Length"] = strconv.Itoa(len(payload))
 	} else {
 		headers["Authorization"] = fmt.Sprintf("WebPush %s", jwt)
-		headers["Crypto-Key"] = fmt.Sprintf("dh=%s;p256ecdsa=%s", functions.GetPublicKey(eccKeyData), functions.GetPublicKey(share.ECCPrivateKey))
+		headers["Crypto-Key"] = fmt.Sprintf("dh=%s;p256ecdsa=%s", strings.ReplaceAll(base64.RawURLEncoding.EncodeToString(eccPublicKey), "=", ""), functions.GetPublicKey(share.ECCPrivateKey))
 		headers["Encryption"] = fmt.Sprintf("salt=%s", strings.ReplaceAll(base64.RawURLEncoding.EncodeToString(salt), "=", ""))
 		headers["Content-Length"] = strconv.Itoa(len(payload))
 	}

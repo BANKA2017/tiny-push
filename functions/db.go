@@ -80,7 +80,7 @@ func DeleteUUID(uuid string) error {
 	return GormDB.W.Where("uuid = ?", uuid).Delete(&model.Channel{}).Error
 }
 
-func UpdateUUID(data model.Channel) error {
+func UpdateUUID(data *model.Channel) error {
 	uuid := data.UUID
 
 	if uuid == "" {
