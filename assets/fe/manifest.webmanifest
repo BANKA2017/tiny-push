@@ -1,0 +1,22 @@
+{
+    "name": "TinyPush",
+    "short_name": "TinyPush",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#212529",
+    "lang": "en",
+    "scope": "/",
+    "theme_color": "#212529",
+    "icons": [
+        {
+            "src": "icon_small.png",
+            "sizes": "96x96",
+            "type": "image/png"
+        },
+        {
+            "src": "icon.png",
+            "sizes": "640x640",
+            "type": "image/png"
+        }
+    ]
+}
