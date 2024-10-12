@@ -26,7 +26,7 @@ func ApiTemplate[T any](code int, message string, data T, version string) _ApiTe
 }
 
 func EchoReject(c echo.Context) error {
-	return c.JSON(http.StatusForbidden, ApiTemplate(403, "非法请求", EchoEmptyObject, "push"))
+	return c.JSON(http.StatusForbidden, ApiTemplate(403, "Invalid request", EchoEmptyObject, "push"))
 }
 
 func EchoNoContent(c echo.Context) error {
