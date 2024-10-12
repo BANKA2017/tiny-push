@@ -136,17 +136,17 @@ func GetAESGCMNonceAndCekAndContent(subscriptionPublicKey *ecdh.PublicKey, auth 
 
 	auth_info := []byte("Content-Encoding: auth\x00")
 	PRK_combine := GenHMAC256(ecdh_secret, auth_secret)
-	IKM := GenHMAC256(append(auth_info, '\x01'), PRK_combine)
+	IKM := GenHMAC256(append(auth_info, 0x01), PRK_combine)
 
 	PRK := GenHMAC256(IKM, salt)
 
 	cek_info := []byte("Content-Encoding: aesgcm\x00")
 	cek_info = append(cek_info, context...)
-	cek := GenHMAC256(append(cek_info, '\x01'), PRK)[0:16]
+	cek := GenHMAC256(append(cek_info, 0x01), PRK)[0:16]
 
 	nonce_info := []byte("Content-Encoding: nonce\x00")
 	nonce_info = append(nonce_info, context...)
-	nonce := GenHMAC256(append(nonce_info, '\x01'), PRK)[0:12]
+	nonce := GenHMAC256(append(nonce_info, 0x01), PRK)[0:12]
 
 	return nonce, cek, context
 }
@@ -165,15 +165,15 @@ func GetAES128GCMNonceAndCekAndContent(subscriptionPublicKey *ecdh.PublicKey, au
 	key_info = append(key_info, publishPublicKeyBuffer...)
 
 	PRK_key := GenHMAC256(ecdh_secret, auth_secret)
-	IKM := GenHMAC256(append(key_info, '\x01'), PRK_key)
+	IKM := GenHMAC256(append(key_info, 0x01), PRK_key)
 
 	PRK := GenHMAC256(IKM, salt)
 
 	cek_info := []byte("Content-Encoding: aes128gcm\x00")
-	cek := GenHMAC256(append(cek_info, '\x01'), PRK)[0:16]
+	cek := GenHMAC256(append(cek_info, 0x01), PRK)[0:16]
 
 	nonce_info := []byte("Content-Encoding: nonce\x00")
-	nonce := GenHMAC256(append(nonce_info, '\x01'), PRK)[0:12]
+	nonce := GenHMAC256(append(nonce_info, 0x01), PRK)[0:12]
 
 	return nonce, cek, key_info
 }
@@ -192,7 +192,7 @@ func Encrypt(nonce, contentEncryptionKey, content []byte, encoding string) []byt
 	payload := []byte{}
 
 	if encoding == "aes128gcm" {
-		payload = append(payload, '\x02')
+		payload = append(payload, 0x02)
 	} else {
 		tmp := []byte("\x00\x00")
 		payload = append(tmp, payload...)
