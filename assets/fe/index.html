@@ -1,816 +1,869 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
-    <head>
-        <meta name="robots" content="nofollow" />
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="description" content="TinyPush" />
-        <meta name="theme-color" content="#212529" />
-        <link rel="apple-touch-icon" href="/icon_small.png" />
-        <link rel="icon" href="/icon_small.png" />
-        <link rel="manifest" href="/manifest.webmanifest" />
-        <title>TinyPush</title>
-        <!-- CSS only -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
-        <style>
-            a::after {
-                content: ' ↗';
-            }
 
-            .quote-card-body::before {
-                content: '> ';
-            }
+<head>
+    <meta name="robots" content="nofollow" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="TinyPush" />
+    <meta name="theme-color" content="#212529" />
+    <link rel="apple-touch-icon" href="/icon_small.png" />
+    <link rel="icon" href="/icon_small.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>TinyPush</title>
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+    <style>
+        a::after {
+            content: ' ↗';
+        }
 
-            .hover-underline:hover {
-                text-decoration-line: underline;
-            }
+        .quote-card-body::before {
+            content: '> ';
+        }
+
+        .hover-underline:hover {
+            text-decoration-line: underline;
+        }
+
+        .bookmark-preview-width {
+            max-width: 50%;
+        }
+
+        @media (max-width: 768.01px) {
             .bookmark-preview-width {
-                max-width: 50%;
+                max-width: 100%;
             }
-            @media (max-width: 768.01px) {
-                .bookmark-preview-width {
-                    max-width: 100%;
-                }
-            }
-        </style>
-    </head>
+        }
+    </style>
+</head>
 
-    <body style="display: flex; justify-content: center; min-height: 100vh; padding: 20px; flex-direction: column; overflow-y: auto">
-        <div id="app" class="d-flex justify-content-center">
-            <div style="max-width: 600px; width: 95vw">
-                <div v-if="message.content" style="padding-top: 5rem; padding-bottom: 2rem">
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between">
-                            <em class="lead" v-if="messageDate" :title="message.timestamp">{{ messageDate }}</em>
-                            <em class="lead" v-else-if="message.sign?.startsWith('build-in:')">{{ message.sign }}</em>
-                            <div role="button" @click="writeClipboardText(message.sign, 'signature')" style="display: inline-block" :title="message.sign ? message.sign : '<unsigned>'">
-                                <svg v-if="message.verify " xmlns="http://www.w3.org/2000/svg" width="1.1em" height="1.1em" viewBox="0 0 32 32">
-                                    <g fill="none">
-                                        <path fill="#00D26A" d="M2 6a4 4 0 0 1 4-4h20a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z" />
-                                        <path
-                                            fill="#F4F4F4"
-                                            d="M13.242 23c-.383 0-.766-.143-1.059-.43l-5.744-5.642a1.453 1.453 0 0 1 0-2.08a1.517 1.517 0 0 1 2.118 0l4.685 4.601L23.443 9.431a1.517 1.517 0 0 1 2.118 0a1.452 1.452 0 0 1 0 2.08l-11.26 11.058a1.503 1.503 0 0 1-1.059.431"
-                                        />
-                                    </g>
-                                </svg>
-                                <svg v-else xmlns="http://www.w3.org/2000/svg" width="0.75em" height="0.75em" viewBox="0 0 32 32">
-                                    <path
-                                        fill="#F92F60"
-                                        d="M24.879 2.879A3 3 0 1 1 29.12 7.12l-8.79 8.79a.125.125 0 0 0 0 .177l8.79 8.79a3 3 0 1 1-4.242 4.243l-8.79-8.79a.125.125 0 0 0-.177 0l-8.79 8.79a3 3 0 1 1-4.243-4.242l8.79-8.79a.125.125 0 0 0 0-.177l-8.79-8.79A3 3 0 0 1 7.12 2.878l8.79 8.79a.125.125 0 0 0 .177 0z"
-                                    />
-                                </svg>
-                            </div>
-                        </div>
-                        <hr />
-                    </div>
-                    <div :title="message.content">
-                        <template v-if="message.originalMode">
-                            <p class="text-break" v-for="(_message, i) in message.content.trim().split('\n')" :key="i" :dir="isRtlUnicode(_message.trim().charCodeAt(0)) ? 'rtl' : 'ltr'">{{ _message }}</p>
-                        </template>
-                        <template v-else>
-                            <div v-for="paragraph in messageObject" :key="'paragraph-'+paragraph" class="my-2 text-break" :dir="isRtlUnicode((paragraph?.text || '').trim().charCodeAt(0)) ? 'rtl' : 'ltr'">
-                                <component :is="'h' + paragraph?.ext?.level" v-if="paragraph?.type === 'heading'">
-                                    <template v-for="node in paragraph.nodes" :key="node.text">
-                                        <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
-                                        <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href" target="_blank">{{ node.text }}</a>
-                                        <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
-                                        <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
-                                        <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
-                                        <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
-                                        <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
-                                    </template>
-                                </component>
-                                <li v-else-if="paragraph?.type.startsWith('list')">
-                                    <input v-if="paragraph?.type === 'list_check'" class="form-check-input me-2" type="checkbox" :checked="paragraph?.ext?.value" />
-                                    <template v-for="node in paragraph.nodes" :key="node.text">
-                                        <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
-                                        <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href" target="_blank">{{ node.text }}</a>
-                                        <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
-                                        <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
-                                        <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
-                                        <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
-                                        <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
-                                    </template>
-                                </li>
-                                <div class="card" v-else-if="paragraph?.type === 'blockquote'">
-                                    <div class="card-body quote-card-body">
-                                        <template v-for="node in paragraph.nodes" :key="node.text">
-                                            <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
-                                            <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href" target="_blank">{{ node.text }}</a>
-                                            <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
-                                            <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
-                                            <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
-                                            <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
-                                            <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
-                                        </template>
-                                    </div>
-                                </div>
-                                <hr v-else-if="paragraph?.type === 'line'" />
-                                <div v-else-if="paragraph?.type === 'image'" class="d-flex justify-content-center">
-                                    <div class="text-center">
-                                        <img :alt="paragraph?.text" :src="paragraph?.ext?.src" :title="paragraph?.ext?.title" class="rounded" style="max-height: 40vh; max-width: 100%; cursor: zoom-in" @click="OpenNewPage(paragraph?.ext?.src)" />
-                                        <small class="text-body-secondary d-block" v-if="paragraph?.text">{{ paragraph?.text }}</small>
-                                    </div>
-                                </div>
-                                <div v-else>
-                                    <template v-for="node in paragraph.nodes" :key="node.text">
-                                        <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
-                                        <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href" target="_blank">{{ node.text }}</a>
-                                        <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
-                                        <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
-                                        <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
-                                        <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
-                                        <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
-                                    </template>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                    <div class="d-flex justify-content-start">
-                        <button v-if="!message?.sign?.startsWith('build-in:')" class="btn btn-sm" style="width: 2rem; height: 2rem" @click="modifyBookmarks">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" viewBox="0 0 16 16">
-                                <path v-if="bookmarks.some(x => (message.content === x.content) && (message.timestamp === x.timestamp))" d="M2 2v13.5a.5.5 0 0 0 .74.439L8 13.069l5.26 2.87A.5.5 0 0 0 14 15.5V2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2" />
-                                <path v-else d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1z" />
-                            </svg>
-                        </button>
-                        <button class="btn btn-sm" style="width: 2rem; height: 2rem" @click="message.originalMode=!message.originalMode">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" viewBox="0 0 16 16">
-                                <path v-if="message.originalMode" d="M14 3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM2 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
-                                <path v-if="message.originalMode" fill-rule="evenodd" d="M9.146 8.146a.5.5 0 0 1 .708 0L11.5 9.793l1.646-1.647a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 0-.708" />
-                                <path v-if="message.originalMode" fill-rule="evenodd" d="M11.5 5a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 1 .5-.5" />
-                                <path v-if="message.originalMode" d="M3.56 11V7.01h.056l1.428 3.239h.774l1.42-3.24h.056V11h1.073V5.001h-1.2l-1.71 3.894h-.039l-1.71-3.894H2.5V11z" />
-                                <path
-                                    v-else
-                                    d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm11.5 1a.5.5 0 0 0-.5.5v3.793L9.854 8.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L12 9.293V5.5a.5.5 0 0 0-.5-.5M3.56 7.01h.056l1.428 3.239h.774l1.42-3.24h.056V11h1.073V5.001h-1.2l-1.71 3.894h-.039l-1.71-3.894H2.5V11h1.06z"
-                                />
-                            </svg>
-                        </button>
-                        <button class="btn btn-sm ms-1" style="width: 2rem; height: 2rem" @click="writeClipboardText(message.content, 'message')">
-                            <svg v-if="copied.message" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0" />
-                            </svg>
-                            <svg v-else xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z" />
-                                <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div v-else-if="route[0] === 'bookmarks'">
-                    <h1 class="text-start mb-2">
-                        <span>Bookmarks</span>
-                    </h1>
-                    <template v-for="(bookmark, i) in bookmarks" :key="bookmark.content + '-' + bookmark.timestamp">
-                        <button class="d-flex flex-column flex-md-row justify-content-between btn btn-dark" style="width: 100%" @click="pushToPreview(bookmark)">
-                            <div class="text-truncate bookmark-preview-width">{{ bookmark.content }}</div>
-                            <div>{{ parseDate(bookmark.timestamp) }}</div>
-                        </button>
-                    </template>
-                </div>
-                <div v-else>
-                    <h1 class="text-center mb-2">
-                        <div style="display: inline-block; transform: translateY(-0.1em)">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32">
+<body
+    style="display: flex; justify-content: center; min-height: 100vh; padding: 20px; flex-direction: column; overflow-y: auto">
+    <div id="app" class="d-flex justify-content-center">
+        <div style="max-width: 600px; width: 95vw">
+            <div v-if="message.content" style="padding-top: 5rem; padding-bottom: 2rem">
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <em class="lead" v-if="messageDate" :title="message.timestamp">{{ messageDate }}</em>
+                        <em class="lead" v-else-if="message.sign?.startsWith('build-in:')">{{ message.sign }}</em>
+                        <div role="button" @click="writeClipboardText(message.sign, 'signature')"
+                            style="display: inline-block" :title="message.sign ? message.sign : '<unsigned>'">
+                            <svg v-if="message.verify " xmlns="http://www.w3.org/2000/svg" width="1.1em" height="1.1em"
+                                viewBox="0 0 32 32">
                                 <g fill="none">
-                                    <path fill="#FF822D" d="M12.5 27.5c.448 1.442 1.838 2.5 3.5 2.5c1.663 0 3.052-1.058 3.5-2.5z" />
-                                    <path fill="#FFB02E" d="M16 6.55c-.69 0-1.25-.56-1.25-1.25V3.25a1.25 1.25 0 0 1 2.5 0V5.3c0 .69-.56 1.25-1.25 1.25" />
-                                    <path
-                                        fill="#F9C23C"
-                                        d="M27.6 22.843c-.96-.773-1.54-1.927-1.78-3.15l-1.73-8.9C23.32 6.85 19.94 4.01 16 4c-3.94.01-7.32 2.85-8.09 6.793l-1.73 8.9c-.24 1.223-.82 2.377-1.78 3.15a3.783 3.783 0 0 0-1.4 2.95v1.234c0 .542.43.973.95.973h24.1c.53 0 .95-.431.95-.973v-1.234c0-1.204-.55-2.258-1.4-2.95"
-                                    />
+                                    <path fill="#00D26A"
+                                        d="M2 6a4 4 0 0 1 4-4h20a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z" />
+                                    <path fill="#F4F4F4"
+                                        d="M13.242 23c-.383 0-.766-.143-1.059-.43l-5.744-5.642a1.453 1.453 0 0 1 0-2.08a1.517 1.517 0 0 1 2.118 0l4.685 4.601L23.443 9.431a1.517 1.517 0 0 1 2.118 0a1.452 1.452 0 0 1 0 2.08l-11.26 11.058a1.503 1.503 0 0 1-1.059.431" />
                                 </g>
                             </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" width="0.75em" height="0.75em"
+                                viewBox="0 0 32 32">
+                                <path fill="#F92F60"
+                                    d="M24.879 2.879A3 3 0 1 1 29.12 7.12l-8.79 8.79a.125.125 0 0 0 0 .177l8.79 8.79a3 3 0 1 1-4.242 4.243l-8.79-8.79a.125.125 0 0 0-.177 0l-8.79 8.79a3 3 0 1 1-4.243-4.242l8.79-8.79a.125.125 0 0 0 0-.177l-8.79-8.79A3 3 0 0 1 7.12 2.878l8.79 8.79a.125.125 0 0 0 .177 0z" />
+                            </svg>
                         </div>
-                        <span>TinyPush</span>
-                    </h1>
-                    <button v-if="pushStatus === 'default'" class="btn btn-primary mb-2" @click="initPushConfig" style="width: 100%">Subscribe</button>
-                    <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="unSubscribe" style="width: 100%">Unsubscribe</button>
-                    <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.</p>
-                    <p v-else-if="pushStatus === 'denied'" class="text-center">To receive messages, please allow the browser to use notification.</p>
-                    <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
-
-                    <details @toggle="(event) => {push_panel_open = event.newState === 'open'}" :open="push_panel_open">
-                        <summary class="text-center">Send Message</summary>
-                        <div class="mb-3 mt-2">
-                            <label class="form-label" for="uuid">UUID</label>
-                            <div class="input-group">
-                                <input id="uuid" type="text" class="form-control" v-model="uuid" aria-describedby="restore-uuid" autocomplete="on" placeholder="UUID" required />
-                                <button class="btn btn-secondary" type="button" id="restore-uuid" @click="restoreUUID">Restore</button>
-                            </div>
-                            <div class="form-text" id="form-text-uuid">The message will be pushed to the device corresponding to the uuid</div>
-                        </div>
-                        <hr />
-
-                        <div class="mb-3">
-                            <label class="form-label d-flex justify-content-between" for="message">
-                                <span class="me-1">Message</span>
-                                <div v-if="push_status === 1" class="spinner-border spinner-border-sm" style="display: inline-block; margin-right: 0.2rem" role="status">
-                                    <span class="visually-hidden">Sending...</span>
+                    </div>
+                    <hr />
+                </div>
+                <div :title="message.content">
+                    <template v-if="message.originalMode">
+                        <p class="text-break" v-for="(_message, i) in message.content.trim().split('\n')" :key="i"
+                            :dir="isRtlUnicode(_message.trim().charCodeAt(0)) ? 'rtl' : 'ltr'">{{ _message }}</p>
+                    </template>
+                    <template v-else>
+                        <div v-for="paragraph in messageObject" :key="'paragraph-'+paragraph" class="my-2 text-break"
+                            :dir="isRtlUnicode((paragraph?.text || '').trim().charCodeAt(0)) ? 'rtl' : 'ltr'">
+                            <component :is="'h' + paragraph?.ext?.level" v-if="paragraph?.type === 'heading'">
+                                <template v-for="node in paragraph.nodes" :key="node.text">
+                                    <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
+                                    <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href"
+                                        target="_blank">{{ node.text }}</a>
+                                    <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
+                                    <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
+                                    <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
+                                    <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
+                                    <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
+                                </template>
+                            </component>
+                            <li v-else-if="paragraph?.type.startsWith('list')">
+                                <input v-if="paragraph?.type === 'list_check'" class="form-check-input me-2"
+                                    type="checkbox" :checked="paragraph?.ext?.value" />
+                                <template v-for="node in paragraph.nodes" :key="node.text">
+                                    <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
+                                    <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href"
+                                        target="_blank">{{ node.text }}</a>
+                                    <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
+                                    <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
+                                    <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
+                                    <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
+                                    <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
+                                </template>
+                            </li>
+                            <div class="card" v-else-if="paragraph?.type === 'blockquote'">
+                                <div class="card-body quote-card-body">
+                                    <template v-for="node in paragraph.nodes" :key="node.text">
+                                        <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
+                                        <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href"
+                                            target="_blank">{{ node.text }}</a>
+                                        <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
+                                        <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text
+                                                }}</em></strong>
+                                        <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
+                                        <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
+                                        <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
+                                    </template>
                                 </div>
-                                <span v-else-if="push_status === 2">✅</span>
-                                <span v-else-if="push_status === 3">❌</span>
-                                <span v-else class="font-monospace" :style="{color: pushMessageByteLength >= push_message_maximum ? '#F4212E' : (push_message_maximum - pushMessageByteLength <= 20 ? '#F2CA03' : 'white')}"
-                                    >{{ pushMessageByteLength }}/{{ push_message_maximum }}</span
-                                >
-                            </label>
-                            <div class="input-group">
-                                <textarea rows="5" id="message" class="form-control" v-model="push_message" placeholder="New message..." :dir="isRtlUnicode(push_message.trim().charCodeAt(0)) ? 'rtl' : 'ltr'"></textarea>
+                            </div>
+                            <hr v-else-if="paragraph?.type === 'line'" />
+                            <div v-else-if="paragraph?.type === 'image'" class="d-flex justify-content-center">
+                                <div class="text-center">
+                                    <img :alt="paragraph?.text" :src="paragraph?.ext?.src"
+                                        :title="paragraph?.ext?.title" class="rounded"
+                                        style="max-height: 40vh; max-width: 100%; cursor: zoom-in"
+                                        @click="OpenNewPage(paragraph?.ext?.src)" />
+                                    <small class="text-body-secondary d-block" v-if="paragraph?.text">{{ paragraph?.text
+                                        }}</small>
+                                </div>
+                            </div>
+                            <div v-else>
+                                <template v-for="node in paragraph.nodes" :key="node.text">
+                                    <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
+                                    <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href"
+                                        target="_blank">{{ node.text }}</a>
+                                    <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
+                                    <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
+                                    <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
+                                    <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
+                                    <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
+                                </template>
                             </div>
                         </div>
-                        <hr />
-                        <details class="mb-3">
-                            <summary>Logs</summary>
-                            <ul>
-                                <li v-for="(log, i) in push_logs" :key="i">{{ log }}</li>
-                            </ul>
-                            <hr />
-                        </details>
-                        <button v-if="pushMessageByteLength > 0" class="btn btn-secondary mb-2" :disabled="pushMessageByteLength <= 0" @click="message = { content: push_message, sign: 'build-in:preview', verify: true}" style="width: 100%">
-                            Preview
-                        </button>
-                        <button class="btn btn-danger mb-2" :disabled="pushMessageByteLength <= 0" @click="sendPush" style="width: 100%">PUSH!</button>
-                    </details>
-                    <p class="text-end mt-5">
-                        <span @click="pushState({ name: 'bookmarks' }, './#/bookmarks')" role="button" class="me-2 hover-underline">#bookmarks</span>
-                        <span @click="pushState({ name: 'help' }, './#/help')" role="button" class="me-2 hover-underline">#help</span>
-                        <span @click="pushState({ name: 'about' }, './#/about')" class="hover-underline" role="button">#about</span>
-                    </p>
+                    </template>
+                </div>
+                <div class="d-flex justify-content-start">
+                    <button v-if="!message?.sign?.startsWith('build-in:')" class="btn btn-sm"
+                        style="width: 2rem; height: 2rem" @click="modifyBookmarks">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor"
+                            viewBox="0 0 16 16">
+                            <path
+                                v-if="bookmarks.some(x => (message.content === x.content) && (message.timestamp === x.timestamp))"
+                                d="M2 2v13.5a.5.5 0 0 0 .74.439L8 13.069l5.26 2.87A.5.5 0 0 0 14 15.5V2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2" />
+                            <path v-else
+                                d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1z" />
+                        </svg>
+                    </button>
+                    <button class="btn btn-sm" style="width: 2rem; height: 2rem"
+                        @click="message.originalMode=!message.originalMode">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor"
+                            viewBox="0 0 16 16">
+                            <path v-if="message.originalMode"
+                                d="M14 3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM2 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
+                            <path v-if="message.originalMode" fill-rule="evenodd"
+                                d="M9.146 8.146a.5.5 0 0 1 .708 0L11.5 9.793l1.646-1.647a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 0-.708" />
+                            <path v-if="message.originalMode" fill-rule="evenodd"
+                                d="M11.5 5a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 1 .5-.5" />
+                            <path v-if="message.originalMode"
+                                d="M3.56 11V7.01h.056l1.428 3.239h.774l1.42-3.24h.056V11h1.073V5.001h-1.2l-1.71 3.894h-.039l-1.71-3.894H2.5V11z" />
+                            <path v-else
+                                d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm11.5 1a.5.5 0 0 0-.5.5v3.793L9.854 8.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L12 9.293V5.5a.5.5 0 0 0-.5-.5M3.56 7.01h.056l1.428 3.239h.774l1.42-3.24h.056V11h1.073V5.001h-1.2l-1.71 3.894h-.039l-1.71-3.894H2.5V11h1.06z" />
+                        </svg>
+                    </button>
+                    <button class="btn btn-sm ms-1" style="width: 2rem; height: 2rem"
+                        @click="writeClipboardText(message.content, 'message')">
+                        <svg v-if="copied.message" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                            fill="currentColor" viewBox="0 0 16 16">
+                            <path
+                                d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor"
+                            viewBox="0 0 16 16">
+                            <path
+                                d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z" />
+                            <path
+                                d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z" />
+                        </svg>
+                    </button>
                 </div>
             </div>
-            <button class="btn btn-sm btn-danger" style="position: fixed; right: 4vw; top: 2rem; width: 3rem; height: 3rem" @click="pushState({ name: 'main' }, '.')" v-if="route[0] !== 'main' || message.content !== ''">
-                <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
-                </svg>
-            </button>
+            <div v-else-if="route[0] === 'bookmarks'">
+                <h1 class="text-start mb-2">
+                    <span>Bookmarks</span>
+                </h1>
+                <template v-for="(bookmark, i) in bookmarks" :key="bookmark.content + '-' + bookmark.timestamp">
+                    <button class="d-flex flex-column flex-md-row justify-content-between btn btn-dark"
+                        style="width: 100%" @click="pushToPreview(bookmark)">
+                        <div class="text-truncate bookmark-preview-width">{{ bookmark.content }}</div>
+                        <div>{{ parseDate(bookmark.timestamp) }}</div>
+                    </button>
+                </template>
+            </div>
+            <div v-else>
+                <h1 class="text-center mb-2">
+                    <div style="display: inline-block; transform: translateY(-0.1em)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32">
+                            <g fill="none">
+                                <path fill="#FF822D"
+                                    d="M12.5 27.5c.448 1.442 1.838 2.5 3.5 2.5c1.663 0 3.052-1.058 3.5-2.5z" />
+                                <path fill="#FFB02E"
+                                    d="M16 6.55c-.69 0-1.25-.56-1.25-1.25V3.25a1.25 1.25 0 0 1 2.5 0V5.3c0 .69-.56 1.25-1.25 1.25" />
+                                <path fill="#F9C23C"
+                                    d="M27.6 22.843c-.96-.773-1.54-1.927-1.78-3.15l-1.73-8.9C23.32 6.85 19.94 4.01 16 4c-3.94.01-7.32 2.85-8.09 6.793l-1.73 8.9c-.24 1.223-.82 2.377-1.78 3.15a3.783 3.783 0 0 0-1.4 2.95v1.234c0 .542.43.973.95.973h24.1c.53 0 .95-.431.95-.973v-1.234c0-1.204-.55-2.258-1.4-2.95" />
+                            </g>
+                        </svg>
+                    </div>
+                    <span>TinyPush</span>
+                </h1>
+                <button v-if="pushStatus === 'default'" class="btn btn-primary mb-2" @click="initPushConfig"
+                    style="width: 100%">Subscribe</button>
+                <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="unSubscribe"
+                    style="width: 100%">Unsubscribe</button>
+                <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.</p>
+                <p v-else-if="pushStatus === 'denied'" class="text-center">To receive messages, please allow the browser
+                    to use notification.</p>
+                <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
+
+                <details @toggle="(event) => {push_panel_open = event.newState === 'open'}" :open="push_panel_open">
+                    <summary class="text-center">Send Message</summary>
+                    <div class="mb-3 mt-2">
+                        <label class="form-label" for="uuid">UUID</label>
+                        <div class="input-group">
+                            <input id="uuid" type="text" class="form-control" v-model="uuid"
+                                aria-describedby="restore-uuid" autocomplete="on" placeholder="UUID" required />
+                            <button class="btn btn-secondary" type="button" id="restore-uuid"
+                                @click="restoreUUID">Restore</button>
+                        </div>
+                        <div class="form-text" id="form-text-uuid">The message will be pushed to the device
+                            corresponding to the uuid</div>
+                    </div>
+                    <hr />
+
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between" for="message">
+                            <span class="me-1">Message</span>
+                            <div v-if="push_status === 1" class="spinner-border spinner-border-sm"
+                                style="display: inline-block; margin-right: 0.2rem" role="status">
+                                <span class="visually-hidden">Sending...</span>
+                            </div>
+                            <span v-else-if="push_status === 2">✅</span>
+                            <span v-else-if="push_status === 3">❌</span>
+                            <span v-else class="font-monospace"
+                                :style="{color: pushMessageByteLength >= push_message_maximum ? '#F4212E' : (push_message_maximum - pushMessageByteLength <= 20 ? '#F2CA03' : 'white')}">{{
+                                pushMessageByteLength }}/{{ push_message_maximum }}</span>
+                        </label>
+                        <div class="input-group">
+                            <textarea rows="5" id="message" class="form-control" v-model="push_message"
+                                placeholder="New message..."
+                                :dir="isRtlUnicode(push_message.trim().charCodeAt(0)) ? 'rtl' : 'ltr'"></textarea>
+                        </div>
+                    </div>
+                    <hr />
+                    <details class="mb-3">
+                        <summary>Logs</summary>
+                        <ul>
+                            <li v-for="(log, i) in push_logs" :key="i">{{ log }}</li>
+                        </ul>
+                        <hr />
+                    </details>
+                    <button v-if="pushMessageByteLength > 0" class="btn btn-secondary mb-2"
+                        :disabled="pushMessageByteLength <= 0"
+                        @click="message = { content: push_message, sign: 'build-in:preview', verify: true}"
+                        style="width: 100%">
+                        Preview
+                    </button>
+                    <button class="btn btn-danger mb-2" :disabled="pushMessageByteLength <= 0" @click="sendPush"
+                        style="width: 100%">PUSH!</button>
+                </details>
+                <p class="text-end mt-5">
+                    <span @click="pushState({ name: 'bookmarks' }, './#/bookmarks')" role="button"
+                        class="me-2 hover-underline">#bookmarks</span>
+                    <span @click="pushState({ name: 'help' }, './#/help')" role="button"
+                        class="me-2 hover-underline">#help</span>
+                    <span @click="pushState({ name: 'about' }, './#/about')" class="hover-underline"
+                        role="button">#about</span>
+                </p>
+            </div>
         </div>
-        <!--load css and js-->
-        <script src="https://cdn.jsdelivr.net/npm/vue@3.4.24/dist/vue.global.prod.js" integrity="sha256-NuLZKbx8rSWxfBrjvEqgCUKQ+dIBM3WUKEOAqw/NfIw=" crossorigin="anonymous"></script>
-        <script>
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker
-                    .register('./sw.js')
-                    .then((reg) => {
-                        //console.log('register a service worker: ', reg)
-                    })
-                    .catch((err) => {
-                        console.error('err: ', err)
-                    })
-            }
+        <button class="btn btn-sm btn-danger" style="position: fixed; right: 4vw; top: 2rem; width: 3rem; height: 3rem"
+            @click="pushState({ name: 'main' }, '.')" v-if="route[0] !== 'main' || message.content !== ''">
+            <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                    d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
+            </svg>
+        </button>
+    </div>
+    <!--load css and js-->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.24/dist/vue.global.prod.js"
+        integrity="sha256-NuLZKbx8rSWxfBrjvEqgCUKQ+dIBM3WUKEOAqw/NfIw=" crossorigin="anonymous"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker
+                .register('./sw.js')
+                .then((reg) => {
+                    //console.log('register a service worker: ', reg)
+                })
+                .catch((err) => {
+                    console.error('err: ', err)
+                })
+        }
 
-            const endpoint = '.'
-            const { createApp } = Vue
-            createApp({
-                data: () => ({
-                    pushStatus: '',
-                    vapid: '',
-                    uuid: '',
-                    push_message_maximum: 3500, // This is just a recommended length, a small amount exceeding is ok
-                    push_message: '',
-                    push_status: 0, // 0->idle, 1->sending, 2->success, 3->failed
-                    push_logs: [],
-                    push_panel_open: false,
-                    bookmarks: [],
-                    message: {
-                        content: '',
-                        sign: '',
-                        verify: false,
-                        timestamp: 0
-                    },
-                    route: ['main'],
-                    copied: {
-                        message: false,
-                        signature: false
+        const endpoint = '.'
+        const { createApp } = Vue
+        createApp({
+            data: () => ({
+                pushStatus: '',
+                vapid: '',
+                uuid: '',
+                push_message_maximum: 3500, // This is just a recommended length, a small amount exceeding is ok
+                push_message: '',
+                push_status: 0, // 0->idle, 1->sending, 2->success, 3->failed
+                push_logs: [],
+                push_panel_open: false,
+                bookmarks: [],
+                message: {
+                    content: '',
+                    sign: '',
+                    verify: false,
+                    timestamp: 0
+                },
+                route: ['main'],
+                copied: {
+                    message: false,
+                    signature: false
+                }
+            }),
+
+            computed: {
+                messageObject() {
+                    if (this.message.content === '') {
+                        return []
                     }
-                }),
 
-                computed: {
-                    messageObject() {
-                        if (this.message.content === '') {
-                            return []
-                        }
-
-                        return this.message.content.split('\n').map((message) => {
-                            return this.newMessageObject(message)
-                        })
-                    },
-                    messageDate() {
-                        if (!this.message.timestamp) {
-                            return ''
-                        }
-                        return this.parseDate(this.message.timestamp)
-                    },
-                    pushMessageByteLength() {
-                        if (this.push_message === '') {
-                            return 0
-                        }
-                        return new TextEncoder().encode(this.push_message).byteLength
+                    return this.message.content.split('\n').map((message) => {
+                        return this.newMessageObject(message)
+                    })
+                },
+                messageDate() {
+                    if (!this.message.timestamp) {
+                        return ''
+                    }
+                    return this.parseDate(this.message.timestamp)
+                },
+                pushMessageByteLength() {
+                    if (this.push_message === '') {
+                        return 0
+                    }
+                    return new TextEncoder().encode(this.push_message).byteLength
+                }
+            },
+            watch: {
+                async vapid(newVal, oldVal) {
+                    if (newVal != '' && this.route?.[0] === 'preview') {
+                        const signPayload = new URLSearchParams({ content: this.message.content || '', timestamp: String(this.message.timestamp || 0) }).toString()
+                        this.message.verify = await this.verifySign(signPayload, this.message.sign || '')
                     }
                 },
-                watch: {
-                    async vapid(newVal, oldVal) {
-                        if (newVal != '' && this.route?.[0] === 'preview') {
-                            const signPayload = new URLSearchParams({ content: this.message.content || '', timestamp: String(this.message.timestamp || 0) }).toString()
-                            this.message.verify = await this.verifySign(signPayload, this.message.sign || '')
-                        }
-                    },
-                    async route(newVal, oldVal) {
-                        if (newVal.length < 1) {
-                            return
-                        }
-                        switch (newVal[0]) {
-                            case 'preview':
-                                const hashContent = JSON.parse(atob(this.base64url_to_base64(newVal[1])))
-                                const content = new TextDecoder('utf-8').decode(this.base64_to_buffer(this.base64url_to_base64(hashContent.content)))
-                                //console.log(hashContent, content)
-                                const signPayload = new URLSearchParams({ content, timestamp: String(hashContent?.timestamp || 0) }).toString()
-
-                                this.message = { content, sign: hashContent?.sign || '', verify: await this.verifySign(signPayload, hashContent?.sign || ''), timestamp: Number(hashContent?.timestamp || 0) }
-
-                                // update bookmarks
-                                try {
-                                    this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
-                                } catch (e) {
-                                    console.error(e)
-                                }
-                                break
-                            case 'about':
-                                this.message = {
-                                    content: `### What is TinyPush\n\n> TinyPush is a small tool for pushing content via WebPush 🚀\n\n- Click the markdown icon in the bottom right corner to display the original text.\n\n- A ✅ displayed in the top right corner indicates that the signature verification has been passed. Click the symbol to copy the signature.\n\n- Click **Send Message** on the homepage to view the content. After entering the content in the message, click **PUSH!** to push the message.\n\n- Please keep the UUID safe; anyone with the UUID can push messages to this device. If the UUID is leaked, please reapply for a subscription after unsubscribing on the homepage.\n\n- Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~. Nested syntax is not yet supported. [Full example](/#/markdown)\n\n- It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **Subscribe** button directly, which will not cause the \`UUID\` to be modified.\n---\nOur source code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push).\n`,
-                                    sign: 'build-in:about',
-                                    verify: true
-                                }
-                                break
-                            case 'help':
-                                this.message = {
-                                    content: 'step by step...\n\n`uuid="" # Get the uuid from the target client`\n`message="" # What to push`\n`curl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"`\n',
-                                    sign: 'build-in:help',
-                                    verify: true
-                                }
-                                break
-                            case 'markdown':
-                                this.message = {
-                                    content:
-                                        '# Heading 1\n## Heading 2\n### Heading 3\n#### Heading 4\n##### Heading 5\n###### Heading 6\n- list 1\n- list 2\n- list 3\n- [x] list 4\n- [x] list 5\n- [ ] list 6\n> Blockquote 1???*Italic* `# or just single line code`\n[link 1](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~\nImage is ok~\n![image1](/icon_small.png "title? yes!")',
-                                    sign: 'build-in:markdown',
-                                    verify: true
-                                }
-                                break
-                            case 'import':
-                                break
-                            case 'bookmarks':
-                                try {
-                                    this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
-                                } catch (e) {
-                                    console.error(e)
-                                }
-                            case 'main':
-                                this.message = { content: '', sign: '', verify: false, timestamp: 0 }
-                                break
-                        }
-                        //console.log(newVal, oldVal)
+                async route(newVal, oldVal) {
+                    if (newVal.length < 1) {
+                        return
                     }
-                },
+                    switch (newVal[0]) {
+                        case 'preview':
+                            const hashContent = JSON.parse(atob(this.base64url_to_base64(newVal[1])))
+                            const content = new TextDecoder('utf-8').decode(this.base64_to_buffer(this.base64url_to_base64(hashContent.content)))
+                            //console.log(hashContent, content)
+                            const signPayload = new URLSearchParams({ content, timestamp: String(hashContent?.timestamp || 0) }).toString()
 
-                mounted: async function () {
+                            this.message = { content, sign: hashContent?.sign || '', verify: await this.verifySign(signPayload, hashContent?.sign || ''), timestamp: Number(hashContent?.timestamp || 0) }
+
+                            // update bookmarks
+                            try {
+                                this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
+                            } catch (e) {
+                                console.error(e)
+                            }
+                            break
+                        case 'about':
+                            this.message = {
+                                content: `### What is TinyPush\n\n> TinyPush is a small tool for pushing content via WebPush 🚀\n\n- Click the markdown icon in the bottom right corner to display the original text.\n\n- A ✅ displayed in the top right corner indicates that the signature verification has been passed. Click the symbol to copy the signature.\n\n- Click **Send Message** on the homepage to view the content. After entering the content in the message, click **PUSH!** to push the message.\n\n- Please keep the UUID safe; anyone with the UUID can push messages to this device. If the UUID is leaked, please reapply for a subscription after unsubscribing on the homepage.\n\n- Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~. Nested syntax is not yet supported. [Full example](/#/markdown)\n\n- It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **Subscribe** button directly, which will not cause the \`UUID\` to be modified.\n---\nOur source code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push).\n`,
+                                sign: 'build-in:about',
+                                verify: true
+                            }
+                            break
+                        case 'help':
+                            this.message = {
+                                content: 'step by step...\n\n`uuid="" # Get the uuid from the target client`\n`message="" # What to push`\n`curl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"`\n',
+                                sign: 'build-in:help',
+                                verify: true
+                            }
+                            break
+                        case 'markdown':
+                            this.message = {
+                                content:
+                                    '# Heading 1\n## Heading 2\n### Heading 3\n#### Heading 4\n##### Heading 5\n###### Heading 6\n- list 1\n- list 2\n- list 3\n- [x] list 4\n- [x] list 5\n- [ ] list 6\n> Blockquote 1???*Italic* `# or just single line code`\n[link 1](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~\nImage is ok~\n![image1](/icon_small.png "title? yes!")',
+                                sign: 'build-in:markdown',
+                                verify: true
+                            }
+                            break
+                        case 'import':
+                            break
+                        case 'bookmarks':
+                            try {
+                                this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
+                            } catch (e) {
+                                console.error(e)
+                            }
+                        case 'main':
+                            this.message = { content: '', sign: '', verify: false, timestamp: 0 }
+                            break
+                    }
+                    //console.log(newVal, oldVal)
+                }
+            },
+
+            mounted: async function () {
+                this.updateNotifitionPermission()
+                this.subscribeStatus()
+                this.uuid = localStorage.getItem('push:uuid') || ''
+
+                this.routerCase(location.hash)
+                addEventListener('popstate', (event) => {
                     this.updateNotifitionPermission()
                     this.subscribeStatus()
-                    this.uuid = localStorage.getItem('push:uuid') || ''
+                    this.routerCase(event.target.location.hash)
+                })
 
-                    this.routerCase(location.hash)
-                    addEventListener('popstate', (event) => {
-                        this.updateNotifitionPermission()
-                        this.subscribeStatus()
-                        this.routerCase(event.target.location.hash)
+                fetch(endpoint + '/api/vapid')
+                    .then((res) => res.json())
+                    .then(async (res) => {
+                        this.vapid = res.data.vapid
                     })
-
-                    fetch(endpoint + '/api/vapid')
-                        .then((res) => res.json())
-                        .then(async (res) => {
-                            this.vapid = res.data.vapid
-                        })
-                        .catch((e) => {
-                            console.error(e)
-                        })
+                    .catch((e) => {
+                        console.error(e)
+                    })
+            },
+            methods: {
+                routerCase: function (to) {
+                    if (!to) {
+                        to = this.route = ['main']
+                        return
+                    }
+                    to = to.split('#')
+                    if (to.length < 2) {
+                        return // invalid path
+                    }
+                    to = to.slice(1).join('').split('/')
+                    if (!to[1]) {
+                        return // invalid path
+                    } else {
+                        this.route = to.slice(1)
+                    }
                 },
-                methods: {
-                    routerCase: function (to) {
-                        if (!to) {
-                            to = this.route = ['main']
+                updateNotifitionPermission: function () {
+                    if (!('Notification' in window)) {
+                        this.pushStatus = 'no'
+                    } else {
+                        this.pushStatus = Notification.permission
+                    }
+                },
+                initPushConfig: function () {
+                    switch (this.pushStatus) {
+                        case 'no':
+                        case 'granted':
                             return
-                        }
-                        to = to.split('#')
-                        if (to.length < 2) {
-                            return // invalid path
-                        }
-                        to = to.slice(1).join('').split('/')
-                        if (!to[1]) {
-                            return // invalid path
-                        } else {
-                            this.route = to.slice(1)
-                        }
-                    },
-                    updateNotifitionPermission: function () {
-                        if (!('Notification' in window)) {
-                            this.pushStatus = 'no'
-                        } else {
-                            this.pushStatus = Notification.permission
-                        }
-                    },
-                    initPushConfig: function () {
-                        switch (this.pushStatus) {
-                            case 'no':
-                            case 'granted':
-                                return
-                            case 'default':
-                                Notification.requestPermission().then((permission) => {
-                                    this.pushStatus = permission
-                                    if (!this.uuid) {
-                                        this.subscribe()
-                                    }
-                                })
-                            case 'denied':
-                                return
-                        }
-                    },
-                    subscribeStatus: function () {
-                        if (!('serviceWorker' in navigator)) {
-                            console.error('Not support')
-                            return
-                        }
-                        navigator.serviceWorker.ready.then((reg) => {
-                            if (!reg.pushManager) {
-                                console.error('Not support')
-                                return
-                            }
-                            reg.pushManager.getSubscription().then((subscription) => {
-                                if (!subscription) {
-                                    this.pushStatus = 'default'
+                        case 'default':
+                            Notification.requestPermission().then((permission) => {
+                                this.pushStatus = permission
+                                if (!this.uuid) {
+                                    this.subscribe()
                                 }
                             })
-                        })
-                    },
-                    subscribe: function () {
-                        if (!('serviceWorker' in navigator)) {
+                        case 'denied':
+                            return
+                    }
+                },
+                subscribeStatus: function () {
+                    if (!('serviceWorker' in navigator)) {
+                        console.error('Not support')
+                        return
+                    }
+                    navigator.serviceWorker.ready.then((reg) => {
+                        if (!reg.pushManager) {
                             console.error('Not support')
                             return
                         }
-                        navigator.serviceWorker.ready.then((reg) => {
-                            if (!reg.pushManager) {
-                                console.error('Not support')
-                                return
+                        reg.pushManager.getSubscription().then((subscription) => {
+                            if (!subscription) {
+                                this.pushStatus = 'default'
                             }
-                            reg.pushManager
-                                .subscribe({
-                                    userVisibleOnly: true,
-                                    applicationServerKey: this.vapid
+                        })
+                    })
+                },
+                subscribe: function () {
+                    if (!('serviceWorker' in navigator)) {
+                        console.error('Not support')
+                        return
+                    }
+                    navigator.serviceWorker.ready.then((reg) => {
+                        if (!reg.pushManager) {
+                            console.error('Not support')
+                            return
+                        }
+                        reg.pushManager
+                            .subscribe({
+                                userVisibleOnly: true,
+                                applicationServerKey: this.vapid
+                            })
+                            .then((sub) => {
+                                sub = sub.toJSON()
+                                fetch(endpoint + '/api/subscribe/', {
+                                    headers: {
+                                        'content-type': 'application/x-www-form-urlencoded'
+                                    },
+                                    method: 'POST',
+                                    body: new URLSearchParams({
+                                        endpoint: sub.endpoint,
+                                        p256dh: sub.keys.p256dh,
+                                        auth: sub.keys.auth
+                                    }).toString()
                                 })
-                                .then((sub) => {
-                                    sub = sub.toJSON()
-                                    fetch(endpoint + '/api/subscribe/', {
+                                    .then((res) => res.json())
+                                    .then((res) => {
+                                        //console.log(res, res.code, res.data)
+                                        if (res.code === 200) {
+                                            this.uuid = res.data.uuid
+                                            localStorage.setItem('push:uuid', this.uuid)
+                                        }
+                                    })
+                            })
+                    })
+                },
+                unSubscribe: function () {
+                    if (!('serviceWorker' in navigator)) {
+                        console.error('Not support')
+                        return
+                    }
+                    navigator.serviceWorker.ready.then((reg) => {
+                        if (!reg.pushManager) {
+                            console.error('Not support')
+                            return
+                        }
+                        reg.pushManager
+                            .getSubscription()
+                            .then((subscription) => {
+                                subscription.unsubscribe().then((successful) => {
+                                    //?
+                                })
+                                if (this.uuid) {
+                                    fetch(endpoint + '/api/subscribe/' + this.uuid, {
                                         headers: {
                                             'content-type': 'application/x-www-form-urlencoded'
                                         },
-                                        method: 'POST',
-                                        body: new URLSearchParams({
-                                            endpoint: sub.endpoint,
-                                            p256dh: sub.keys.p256dh,
-                                            auth: sub.keys.auth
-                                        }).toString()
+                                        method: 'DELETE'
                                     })
                                         .then((res) => res.json())
                                         .then((res) => {
-                                            //console.log(res, res.code, res.data)
-                                            if (res.code === 200) {
-                                                this.uuid = res.data.uuid
-                                                localStorage.setItem('push:uuid', this.uuid)
-                                            }
+                                            // console.log(res)
                                         })
-                                })
-                        })
-                    },
-                    unSubscribe: function () {
-                        if (!('serviceWorker' in navigator)) {
-                            console.error('Not support')
-                            return
-                        }
-                        navigator.serviceWorker.ready.then((reg) => {
-                            if (!reg.pushManager) {
-                                console.error('Not support')
-                                return
-                            }
-                            reg.pushManager
-                                .getSubscription()
-                                .then((subscription) => {
-                                    subscription.unsubscribe().then((successful) => {
-                                        //?
-                                    })
-                                    if (this.uuid) {
-                                        fetch(endpoint + '/api/subscribe/' + this.uuid, {
-                                            headers: {
-                                                'content-type': 'application/x-www-form-urlencoded'
-                                            },
-                                            method: 'DELETE'
+                                        .catch((e) => {
+                                            console.error(res)
                                         })
-                                            .then((res) => res.json())
-                                            .then((res) => {
-                                                // console.log(res)
-                                            })
-                                            .catch((e) => {
-                                                console.error(res)
-                                            })
-                                    }
-                                    localStorage.removeItem('push:uuid')
-                                    this.uuid = ''
-                                    this.pushStatus = 'default'
-                                })
-                                .catch((e) => {
-                                    console.error(e)
-                                })
-                        })
-                    },
-                    download: function (filename, text) {
-                        let element = document.createElement('a')
-                        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text))
-                        element.setAttribute('download', filename)
-                        element.style.display = 'none'
-                        document.body.appendChild(element)
-                        element.click()
-                        document.body.removeChild(element)
-                    },
-                    base64_to_base64url: (base64) => base64.replaceAll('/', '_').replaceAll('+', '-').replaceAll('=', ''),
-                    base64url_to_base64: (base64url) => base64url.replaceAll('_', '/').replaceAll('-', '+'),
-                    base64_to_buffer: function (base64) {
-                        let binaryString = atob(base64)
-                        let bytes = new Uint8Array(binaryString.length)
-                        for (let i = 0; i < binaryString.length; i++) {
-                            bytes[i] = binaryString.charCodeAt(i)
-                        }
-                        return bytes.buffer
-                    },
-                    buffer_to_base64: function (buf) {
-                        let binary = ''
-                        const bytes = new Uint8Array(buf)
-                        for (var i = 0; i < bytes.byteLength; i++) {
-                            binary += String.fromCharCode(bytes[i])
-                        }
-                        return btoa(binary)
-                    },
-                    sendPush: function () {
-                        if (!this.uuid) {
-                            return
-                        }
-                        this.push_status = 1
-                        fetch(endpoint + '/api/push/' + this.uuid, {
-                            headers: {
-                                'content-type': 'application/x-www-form-urlencoded'
-                            },
-                            method: 'POST',
-                            body: new URLSearchParams({
-                                message: this.push_message,
-                                encoding: 0 ? 'aes128gcm' : 'aesgcm'
-                            }).toString()
-                        })
-                            .then((res) => res.json())
-                            .then((res) => {
-                                this.push_status = res.code === 201 ? 2 : 3
-                                this.push_logs.unshift({
-                                    response: res
-                                })
-                                setTimeout(() => {
-                                    this.push_status = 0
-                                }, 1500)
+                                }
+                                localStorage.removeItem('push:uuid')
+                                this.uuid = ''
+                                this.pushStatus = 'default'
                             })
                             .catch((e) => {
-                                this.push_status = 3
                                 console.error(e)
-                                setTimeout(() => {
-                                    this.push_status = 0
-                                }, 1500)
                             })
-                    },
-                    clickEvent: function (e, callback = () => {}) {
-                        let selectionObject = window.getSelection()
-                        if (selectionObject && selectionObject.isCollapsed) {
-                            callback()
-                        }
-                    },
-                    verifySign: async function (content = '', sign = '') {
-                        if (!sign || !this.vapid) {
-                            return false
-                        }
-                        const publicKey = await crypto.subtle.importKey(
-                            'raw',
-                            this.base64_to_buffer(this.base64url_to_base64(this.vapid)),
-                            {
-                                name: 'ECDSA',
-                                namedCurve: 'P-256'
-                            },
-                            true,
-                            ['verify']
-                        )
-                        return await crypto.subtle.verify(
-                            {
-                                name: 'ECDSA',
-                                hash: { name: 'SHA-256' }
-                            },
-                            publicKey,
-                            this.base64_to_buffer(this.base64url_to_base64(sign)),
-                            new TextEncoder().encode(content)
-                        )
-                    },
-                    parseMarkdown: function (str = '') {
-                        if (!str) {
-                            return []
-                        }
-                        const matchEntities = this.PregMatchAll(/\[([^\]]+)\]\(([^)]+)\)|<([^>]+)>|`([^`]+)`|\*{3}([^\*]+)\*{3}|\*{2}([^\*]+)\*{2}|\*{1}([^\*]+)\*{1}|~{2}([^~]+)~{2}/g, str)
-                        const entities = []
-                        let position = 0
-                        for (const i in matchEntities[0]) {
-                            position = str.indexOf(matchEntities[0][i], position)
-                            const valueIndex = matchEntities.slice(1).findIndex((v) => v[i] !== undefined)
-
-                            let valueType = ['link1', 'link1', 'link2', 'inlinecode', 'bold_italic', 'bold', 'italic', 'delete'][valueIndex]
-                            const rename = matchEntities[2][i] !== undefined
-                            let entity = {
-                                type: valueType,
-                                text: matchEntities[valueIndex + 1][i],
-                                position,
-                                length: matchEntities[0][i].length
-                            }
-                            if (['link1', 'link2'].includes(valueType)) {
-                                entity.ext = {
-                                    href: matchEntities[valueType === 'link1' ? 2 : 3][i]
-                                }
-                            }
-                            entities.push(entity)
-                            position += matchEntities[0][i].length
-                        }
-                        return entities
-                    },
-                    newMessageObject: function (str = '') {
-                        const strLength = str.length
-                        let paragraphObject = {
-                            type: 'paragraph',
-                            text: str,
-                            nodes: []
-                        }
-
-                        const pregLine = this.PregMatchAll(/^(#{1,6}) (.*)$|^- \[(x| )\] (.*)$|^\- (.*)$|^> (.*)$|^([\-]+)$|^!\[([^\]]+)\]\(([^ ]+)( ([^\)]+)|)\)$/gm, str)
-                        if (pregLine.length) {
-                            const valueIndex = pregLine.slice(1).findIndex((v) => v[0] !== undefined)
-                            let valueType
-                            switch (valueIndex) {
-                                case 0:
-                                    paragraphObject.type = 'heading'
-                                    paragraphObject.text = pregLine[valueIndex + 2][0]
-                                    paragraphObject.ext = {
-                                        level: pregLine[valueIndex + 1][0].length
-                                    }
-                                    break
-                                case 2:
-                                    paragraphObject.type = 'list_check'
-                                    paragraphObject.text = pregLine[valueIndex + 2][0]
-                                    paragraphObject.ext = {
-                                        value: pregLine[valueIndex + 1][0] === 'x'
-                                    }
-                                    break
-                                case 4:
-                                    paragraphObject.type = 'list'
-                                    paragraphObject.text = pregLine[valueIndex + 1][0]
-                                    break
-                                case 5:
-                                    paragraphObject.type = 'blockquote'
-                                    paragraphObject.text = pregLine[valueIndex + 1][0]
-                                    break
-                                case 6:
-                                    paragraphObject.type = 'line'
-                                    paragraphObject.text = pregLine[valueIndex + 1][0]
-                                    break
-                                case 7:
-                                    paragraphObject.type = 'image'
-                                    paragraphObject.text = pregLine[valueIndex + 1][0]
-                                    paragraphObject.ext = {
-                                        src: pregLine[valueIndex + 2][0],
-                                        title: pregLine[valueIndex + 3][0] ? pregLine[valueIndex + 4][0].trim().replace(/"(.*)"/gm, '$1') : ''
-                                    }
-                            }
-                        }
-                        if (paragraphObject.type === 'image') {
-                            return paragraphObject
-                        }
-
-                        const entities = this.parseMarkdown(paragraphObject.text)
-                        let position = 0
-                        for (const entity of entities) {
-                            paragraphObject.nodes.push({ type: 'plaintext', text: paragraphObject.text.slice(position, entity.position) }, entity)
-                            position = entity.position + entity.length
-                        }
-                        if (position < strLength) {
-                            paragraphObject.nodes.push({ type: 'plaintext', text: paragraphObject.text.slice(position) })
-                        }
-                        return paragraphObject
-                    },
-                    PregMatchAll: (regex = new RegExp('', 'gm'), text = '') => {
-                        let handle
-                        let match = []
-
-                        while ((handle = regex.exec(text)) !== null) {
-                            // This is necessary to avoid infinite loops with zero-width matches
-                            if (handle.index === regex.lastIndex) {
-                                regex.lastIndex++
-                            }
-                            for (const index in handle) {
-                                if (!isNaN(index)) {
-                                    if (!match[index]) {
-                                        match[index] = []
-                                    }
-                                    match[index].push(handle[index])
-                                }
-                            }
-                        }
-                        return match
-                    },
-                    pushState: function (state = {}, url) {
-                        state = { ...state, url }
-                        history.pushState(state, '', url)
-                        dispatchEvent(new PopStateEvent('popstate', { state }))
-                    },
-                    restoreUUID: function () {
-                        this.uuid = localStorage.getItem('push:uuid')
-                    },
-                    writeClipboardText: async function (text, keyName = '') {
-                        try {
-                            await navigator.clipboard.writeText(text)
-                            if (keyName) {
-                                this.copied[keyName] = true
-                                setTimeout(() => {
-                                    this.copied[keyName] = false
-                                }, 1500)
-                            }
-                        } catch (error) {
-                            console.error(error.message)
-                        }
-                    },
-                    modifyBookmarks: function () {
-                        try {
-                            this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
-                        } catch (e) {
-                            console.error(e)
-                        }
-                        const index = this.bookmarks.findIndex((x) => this.message.content === x.content && this.message.timestamp === x.timestamp)
-                        if (index === -1) {
-                            this.bookmarks.unshift({
-                                content: this.message.content,
-                                timestamp: this.message.timestamp,
-                                sign: this.message.sign
+                    })
+                },
+                download: function (filename, text) {
+                    let element = document.createElement('a')
+                    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text))
+                    element.setAttribute('download', filename)
+                    element.style.display = 'none'
+                    document.body.appendChild(element)
+                    element.click()
+                    document.body.removeChild(element)
+                },
+                base64_to_base64url: (base64) => base64.replaceAll('/', '_').replaceAll('+', '-').replaceAll('=', ''),
+                base64url_to_base64: (base64url) => base64url.replaceAll('_', '/').replaceAll('-', '+'),
+                base64_to_buffer: function (base64) {
+                    let binaryString = atob(base64)
+                    let bytes = new Uint8Array(binaryString.length)
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i)
+                    }
+                    return bytes.buffer
+                },
+                buffer_to_base64: function (buf) {
+                    let binary = ''
+                    const bytes = new Uint8Array(buf)
+                    for (var i = 0; i < bytes.byteLength; i++) {
+                        binary += String.fromCharCode(bytes[i])
+                    }
+                    return btoa(binary)
+                },
+                sendPush: function () {
+                    if (!this.uuid) {
+                        return
+                    }
+                    this.push_status = 1
+                    fetch(endpoint + '/api/push/' + this.uuid, {
+                        headers: {
+                            'content-type': 'application/x-www-form-urlencoded'
+                        },
+                        method: 'POST',
+                        body: new URLSearchParams({
+                            message: this.push_message,
+                            encoding: 0 ? 'aes128gcm' : 'aesgcm'
+                        }).toString()
+                    })
+                        .then((res) => res.json())
+                        .then((res) => {
+                            this.push_status = res.code === 201 ? 2 : 3
+                            this.push_logs.unshift({
+                                response: res
                             })
-                        } else {
-                            this.bookmarks = [...this.bookmarks.slice(0, index), ...this.bookmarks.slice(index + 1)]
-                        }
-                        localStorage.setItem('push:bookmarks', JSON.stringify(this.bookmarks))
-                    },
-                    parseDate: function (timestamp = 0) {
-                        try {
-                            const tmpDate = new Date(timestamp)
-                            return `${tmpDate.getFullYear()}-${(tmpDate.getMonth() + 1).toString().padStart(2, '0')}-${tmpDate.getDate().toString().padStart(2, '0')} · ${tmpDate.getHours().toString().padStart(2, '0')}:${tmpDate
-                                .getMinutes()
-                                .toString()
-                                .padStart(2, '0')}:${tmpDate.getSeconds().toString().padStart(2, '0')}`
-                        } catch (e) {
+                            setTimeout(() => {
+                                this.push_status = 0
+                            }, 1500)
+                        })
+                        .catch((e) => {
+                            this.push_status = 3
                             console.error(e)
-                            return ''
-                        }
-                    },
-                    pushToPreview: function (message = {}) {
-                        if (!(message.content && message.sign && message.timestamp)) {
-                            return
-                        }
-                        this.pushState(
-                            { name: 'preview' },
-                            './#/preview/' + this.base64_to_base64url(btoa(JSON.stringify({ content: this.base64_to_base64url(this.buffer_to_base64(new TextEncoder().encode(message.content))), sign: message.sign, timestamp: message.timestamp })))
-                        )
-                    },
-                    OpenNewPage: (url = '') => {
-                        window.open(url)
-                    },
-                    isRtlUnicode: function (codePoint) {
-                        const rtlUnicodeRanges = [
-                            [0x0590, 0x05ff], // he
-                            [0x0600, 0x06ff], // ar
-                            [0x0700, 0x08ff], // others
-                            [0xfb1d, 0xfdff], // he
-                            [0xfe70, 0xfeff], // ar
-                            [0x10800, 0x10fff] // arc
-                        ]
-                        for (const [start, end] of rtlUnicodeRanges) {
-                            if (codePoint >= start && codePoint <= end) {
-                                return true
-                            }
-                        }
+                            setTimeout(() => {
+                                this.push_status = 0
+                            }, 1500)
+                        })
+                },
+                clickEvent: function (e, callback = () => { }) {
+                    let selectionObject = window.getSelection()
+                    if (selectionObject && selectionObject.isCollapsed) {
+                        callback()
+                    }
+                },
+                verifySign: async function (content = '', sign = '') {
+                    if (!sign || !this.vapid) {
                         return false
                     }
+                    const publicKey = await crypto.subtle.importKey(
+                        'raw',
+                        this.base64_to_buffer(this.base64url_to_base64(this.vapid)),
+                        {
+                            name: 'ECDSA',
+                            namedCurve: 'P-256'
+                        },
+                        true,
+                        ['verify']
+                    )
+                    return await crypto.subtle.verify(
+                        {
+                            name: 'ECDSA',
+                            hash: { name: 'SHA-256' }
+                        },
+                        publicKey,
+                        this.base64_to_buffer(this.base64url_to_base64(sign)),
+                        new TextEncoder().encode(content)
+                    )
+                },
+                parseMarkdown: function (str = '') {
+                    if (!str) {
+                        return []
+                    }
+                    const matchEntities = this.PregMatchAll(/\[([^\]]+)\]\(([^)]+)\)|<([^>]+)>|`([^`]+)`|\*{3}([^\*]+)\*{3}|\*{2}([^\*]+)\*{2}|\*{1}([^\*]+)\*{1}|~{2}([^~]+)~{2}/g, str)
+                    const entities = []
+                    let position = 0
+                    for (const i in matchEntities[0]) {
+                        position = str.indexOf(matchEntities[0][i], position)
+                        const valueIndex = matchEntities.slice(1).findIndex((v) => v[i] !== undefined)
+
+                        let valueType = ['link1', 'link1', 'link2', 'inlinecode', 'bold_italic', 'bold', 'italic', 'delete'][valueIndex]
+                        const rename = matchEntities[2][i] !== undefined
+                        let entity = {
+                            type: valueType,
+                            text: matchEntities[valueIndex + 1][i],
+                            position,
+                            length: matchEntities[0][i].length
+                        }
+                        if (['link1', 'link2'].includes(valueType)) {
+                            entity.ext = {
+                                href: matchEntities[valueType === 'link1' ? 2 : 3][i]
+                            }
+                        }
+                        entities.push(entity)
+                        position += matchEntities[0][i].length
+                    }
+                    return entities
+                },
+                newMessageObject: function (str = '') {
+                    const strLength = str.length
+                    let paragraphObject = {
+                        type: 'paragraph',
+                        text: str,
+                        nodes: []
+                    }
+
+                    const pregLine = this.PregMatchAll(/^(#{1,6}) (.*)$|^- \[(x| )\] (.*)$|^\- (.*)$|^> (.*)$|^([\-]+)$|^!\[([^\]]+)\]\(([^ ]+)( ([^\)]+)|)\)$/gm, str)
+                    if (pregLine.length) {
+                        const valueIndex = pregLine.slice(1).findIndex((v) => v[0] !== undefined)
+                        let valueType
+                        switch (valueIndex) {
+                            case 0:
+                                paragraphObject.type = 'heading'
+                                paragraphObject.text = pregLine[valueIndex + 2][0]
+                                paragraphObject.ext = {
+                                    level: pregLine[valueIndex + 1][0].length
+                                }
+                                break
+                            case 2:
+                                paragraphObject.type = 'list_check'
+                                paragraphObject.text = pregLine[valueIndex + 2][0]
+                                paragraphObject.ext = {
+                                    value: pregLine[valueIndex + 1][0] === 'x'
+                                }
+                                break
+                            case 4:
+                                paragraphObject.type = 'list'
+                                paragraphObject.text = pregLine[valueIndex + 1][0]
+                                break
+                            case 5:
+                                paragraphObject.type = 'blockquote'
+                                paragraphObject.text = pregLine[valueIndex + 1][0]
+                                break
+                            case 6:
+                                paragraphObject.type = 'line'
+                                paragraphObject.text = pregLine[valueIndex + 1][0]
+                                break
+                            case 7:
+                                paragraphObject.type = 'image'
+                                paragraphObject.text = pregLine[valueIndex + 1][0]
+                                paragraphObject.ext = {
+                                    src: pregLine[valueIndex + 2][0],
+                                    title: pregLine[valueIndex + 3][0] ? pregLine[valueIndex + 4][0].trim().replace(/"(.*)"/gm, '$1') : ''
+                                }
+                        }
+                    }
+                    if (paragraphObject.type === 'image') {
+                        return paragraphObject
+                    }
+
+                    const entities = this.parseMarkdown(paragraphObject.text)
+                    let position = 0
+                    for (const entity of entities) {
+                        paragraphObject.nodes.push({ type: 'plaintext', text: paragraphObject.text.slice(position, entity.position) }, entity)
+                        position = entity.position + entity.length
+                    }
+                    if (position < strLength) {
+                        paragraphObject.nodes.push({ type: 'plaintext', text: paragraphObject.text.slice(position) })
+                    }
+                    return paragraphObject
+                },
+                PregMatchAll: (regex = new RegExp('', 'gm'), text = '') => {
+                    let handle
+                    let match = []
+
+                    while ((handle = regex.exec(text)) !== null) {
+                        // This is necessary to avoid infinite loops with zero-width matches
+                        if (handle.index === regex.lastIndex) {
+                            regex.lastIndex++
+                        }
+                        for (const index in handle) {
+                            if (!isNaN(index)) {
+                                if (!match[index]) {
+                                    match[index] = []
+                                }
+                                match[index].push(handle[index])
+                            }
+                        }
+                    }
+                    return match
+                },
+                pushState: function (state = {}, url) {
+                    state = { ...state, url }
+                    history.pushState(state, '', url)
+                    dispatchEvent(new PopStateEvent('popstate', { state }))
+                },
+                restoreUUID: function () {
+                    this.uuid = localStorage.getItem('push:uuid')
+                },
+                writeClipboardText: async function (text, keyName = '') {
+                    try {
+                        await navigator.clipboard.writeText(text)
+                        if (keyName) {
+                            this.copied[keyName] = true
+                            setTimeout(() => {
+                                this.copied[keyName] = false
+                            }, 1500)
+                        }
+                    } catch (error) {
+                        console.error(error.message)
+                    }
+                },
+                modifyBookmarks: function () {
+                    try {
+                        this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
+                    } catch (e) {
+                        console.error(e)
+                    }
+                    const index = this.bookmarks.findIndex((x) => this.message.content === x.content && this.message.timestamp === x.timestamp)
+                    if (index === -1) {
+                        this.bookmarks.unshift({
+                            content: this.message.content,
+                            timestamp: this.message.timestamp,
+                            sign: this.message.sign
+                        })
+                    } else {
+                        this.bookmarks = [...this.bookmarks.slice(0, index), ...this.bookmarks.slice(index + 1)]
+                    }
+                    localStorage.setItem('push:bookmarks', JSON.stringify(this.bookmarks))
+                },
+                parseDate: function (timestamp = 0) {
+                    try {
+                        const tmpDate = new Date(timestamp)
+                        return `${tmpDate.getFullYear()}-${(tmpDate.getMonth() + 1).toString().padStart(2, '0')}-${tmpDate.getDate().toString().padStart(2, '0')} · ${tmpDate.getHours().toString().padStart(2, '0')}:${tmpDate
+                            .getMinutes()
+                            .toString()
+                            .padStart(2, '0')}:${tmpDate.getSeconds().toString().padStart(2, '0')}`
+                    } catch (e) {
+                        console.error(e)
+                        return ''
+                    }
+                },
+                pushToPreview: function (message = {}) {
+                    if (!(message.content && message.sign && message.timestamp)) {
+                        return
+                    }
+                    this.pushState(
+                        { name: 'preview' },
+                        './#/preview/' + this.base64_to_base64url(btoa(JSON.stringify({ content: this.base64_to_base64url(this.buffer_to_base64(new TextEncoder().encode(message.content))), sign: message.sign, timestamp: message.timestamp })))
+                    )
+                },
+                OpenNewPage: (url = '') => {
+                    window.open(url)
+                },
+                isRtlUnicode: function (codePoint) {
+                    const rtlUnicodeRanges = [
+                        [0x0590, 0x05ff], // he
+                        [0x0600, 0x06ff], // ar
+                        [0x0700, 0x08ff], // others
+                        [0xfb1d, 0xfdff], // he
+                        [0xfe70, 0xfeff], // ar
+                        [0x10800, 0x10fff] // arc
+                    ]
+                    for (const [start, end] of rtlUnicodeRanges) {
+                        if (codePoint >= start && codePoint <= end) {
+                            return true
+                        }
+                    }
+                    return false
                 }
-            }).mount('#app')
-        </script>
-    </body>
+            }
+        }).mount('#app')
+    </script>
+</body>
+
 </html>
