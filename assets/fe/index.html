@@ -78,7 +78,8 @@
                             :dir="isRtlUnicode(_message.trim().charCodeAt(0)) ? 'rtl' : 'ltr'">{{ _message }}</p>
                     </template>
                     <template v-else>
-                        <div v-for="paragraph in messageObject" :key="'paragraph-'+paragraph" class="my-2 text-break"
+                        <div v-for="(paragraph, paragraphIndex) in messageObject" :key="'paragraph-'+paragraph"
+                            class="my-2 text-break"
                             :dir="isRtlUnicode((paragraph?.text || '').trim().charCodeAt(0)) ? 'rtl' : 'ltr'">
                             <component :is="'h' + paragraph?.ext?.level" v-if="paragraph?.type === 'heading'">
                                 <template v-for="node in paragraph.nodes" :key="node.text">
@@ -132,7 +133,7 @@
                                 <div class="card-body" style="position: relative;" style="overflow-x: auto;">
                                     <div class="position: static;">
                                         <pre style="overflow-x: auto;"><code v-for="(code, i) in paragraph.inline_code"
-                                            :key="'code' + '_' + i + '_' + code" style="display: block; color: var(--bs-code-color);"
+                                            :key="'code' + '_' + paragraphIndex + '_' + i + '_' + code" style="display: block; color: var(--bs-code-color);"
                                             v-show="!code.startsWith('```')">{{ code }}</code></pre>
                                     </div>
                                 </div>
