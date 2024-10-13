@@ -23,6 +23,10 @@
             content: '> ';
         }
 
+        .code-card-body::before {
+            content: attr(code-line)
+        }
+
         .hover-underline:hover {
             text-decoration-line: underline;
         }
@@ -80,7 +84,8 @@
                                 <template v-for="node in paragraph.nodes" :key="node.text">
                                     <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
                                     <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href"
-                                        target="_blank">{{ node.text }}</a>
+                                        :target="node.ext.href.startsWith('#/') ? '_self' : '_blank'">{{ node.text
+                                        }}</a>
                                     <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
                                     <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
                                     <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
@@ -94,7 +99,8 @@
                                 <template v-for="node in paragraph.nodes" :key="node.text">
                                     <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
                                     <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href"
-                                        target="_blank">{{ node.text }}</a>
+                                        :target="node.ext.href.startsWith('#/') ? '_self' : '_blank'">{{ node.text
+                                        }}</a>
                                     <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
                                     <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
                                     <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
@@ -107,7 +113,8 @@
                                     <template v-for="node in paragraph.nodes" :key="node.text">
                                         <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
                                         <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href"
-                                            target="_blank">{{ node.text }}</a>
+                                            :target="node.ext.href.startsWith('#/') ? '_self' : '_blank'">{{ node.text
+                                            }}</a>
                                         <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
                                         <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text
                                                 }}</em></strong>
@@ -115,6 +122,19 @@
                                         <em v-else-if="node?.type === 'italic'">{{ node.text }}</em>
                                         <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
                                     </template>
+                                </div>
+                            </div>
+                            <div class="card" v-else-if="paragraph?.type === 'code'">
+                                <div class="mt-1 mx-3 fw-bold fs-4 " style="user-select: none;"
+                                    v-if="paragraph?.language && paragraph.language !== 'plaintext'">
+                                    {{ paragraph.language.toUpperCase() }}
+                                </div>
+                                <div class="card-body" style="position: relative;" style="overflow-x: auto;">
+                                    <div class="position: static;">
+                                        <pre style="overflow-x: auto;"><code v-for="(code, i) in paragraph.inline_code"
+                                            :key="'code' + '_' + i + '_' + code" style="display: block; color: var(--bs-code-color);"
+                                            v-show="!code.startsWith('```')">{{ code }}</code></pre>
+                                    </div>
                                 </div>
                             </div>
                             <hr v-else-if="paragraph?.type === 'line'" />
@@ -132,7 +152,8 @@
                                 <template v-for="node in paragraph.nodes" :key="node.text">
                                     <span v-if="node?.type === 'plaintext'">{{ node.text }}</span>
                                     <a v-else-if="['link1', 'link2'].includes(node?.type)" :href="node.ext.href"
-                                        target="_blank">{{ node.text }}</a>
+                                        :target="node.ext.href.startsWith('#/') ? '_self' : '_blank'">{{ node.text
+                                        }}</a>
                                     <code v-else-if="node?.type === 'inlinecode'">{{ node.text }}</code>
                                     <strong v-else-if="node?.type === 'bold_italic'"><em>{{ node.text }}</em></strong>
                                     <strong v-else-if="node?.type === 'bold'">{{ node.text }}</strong>
@@ -341,9 +362,37 @@
                         return []
                     }
 
-                    return this.message.content.split('\n').map((message) => {
-                        return this.newMessageObject(message)
+                    const messages = []
+                    const initTmpCodeParagraphData = () => ({
+                        type: 'code',
+                        language: 'plaintext',
+                        text: '',
+                        inline_code: []
                     })
+                    let inCodeBlock = false
+                    let tmpCodeParagraphData = initTmpCodeParagraphData()
+                    for (const message of this.message.content.split('\n')) {
+                        const paragraphData = this.newMessageObject(message)
+                        if (paragraphData?.type === 'code' || inCodeBlock) {
+                            if (paragraphData?.type === 'code') {
+                                inCodeBlock = !inCodeBlock
+                            }
+                            if (paragraphData?.ext?.language) {
+                                tmpCodeParagraphData.language = paragraphData?.ext?.language
+                            }
+
+                            tmpCodeParagraphData.text += (paragraphData.text + '\n')
+                            tmpCodeParagraphData.inline_code.push(paragraphData.text)
+                            if (!inCodeBlock) {
+                                messages.push(tmpCodeParagraphData)
+                                tmpCodeParagraphData = initTmpCodeParagraphData()
+                            }
+                        } else {
+                            messages.push(paragraphData)
+                        }
+                    }
+                    // console.log(messages)
+                    return messages
                 },
                 messageDate() {
                     if (!this.message.timestamp) {
@@ -387,14 +436,14 @@
                             break
                         case 'about':
                             this.message = {
-                                content: `### What is TinyPush\n\n> TinyPush is a small tool for pushing content via WebPush 🚀\n\n- Click the markdown icon in the bottom right corner to display the original text.\n\n- A ✅ displayed in the top right corner indicates that the signature verification has been passed. Click the symbol to copy the signature.\n\n- Click **Send Message** on the homepage to view the content. After entering the content in the message, click **PUSH!** to push the message.\n\n- Please keep the UUID safe; anyone with the UUID can push messages to this device. If the UUID is leaked, please reapply for a subscription after unsubscribing on the homepage.\n\n- Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~. Nested syntax is not yet supported. [Full example](/#/markdown)\n\n- It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **Subscribe** button directly, which will not cause the \`UUID\` to be modified.\n---\nOur source code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push).\n`,
+                                content: `### What is TinyPush\n\n> TinyPush is a small tool for pushing content via WebPush 🚀\n\n- Click the markdown icon in the bottom right corner to display the original text.\n\n- A ✅ displayed in the top right corner indicates that the signature verification has been passed. Click the symbol to copy the signature.\n\n- Click **Send Message** on the homepage to view the content. After entering the content in the message, click **PUSH!** to push the message.\n\n- Please keep the UUID safe; anyone with the UUID can push messages to this device. If the UUID is leaked, please reapply for a subscription after unsubscribing on the homepage.\n\n- Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~. Nested syntax is not yet supported. [Full example](#/markdown)\n\n- It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **Subscribe** button directly, which will not cause the \`UUID\` to be modified.\n---\nOur source code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push).\n`,
                                 sign: 'build-in:about',
                                 verify: true
                             }
                             break
                         case 'help':
                             this.message = {
-                                content: 'step by step...\n\n`uuid="" # Get the uuid from the target client`\n`message="" # What to push`\n`curl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"`\n',
+                                content: 'step by step...\n```shell\nuuid="" # Get the uuid from the target client\nmessage="" # What to push\ncurl -XPOST "https://push.nest.moe/push/$uuid" -d "message=$message"\n```',
                                 sign: 'build-in:help',
                                 verify: true
                             }
@@ -402,7 +451,7 @@
                         case 'markdown':
                             this.message = {
                                 content:
-                                    '# Heading 1\n## Heading 2\n### Heading 3\n#### Heading 4\n##### Heading 5\n###### Heading 6\n- list 1\n- list 2\n- list 3\n- [x] list 4\n- [x] list 5\n- [ ] list 6\n> Blockquote 1???*Italic* `# or just single line code`\n[link 1](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~\nImage is ok~\n![image1](/icon_small.png "title? yes!")',
+                                    '# Heading 1\n## Heading 2\n### Heading 3\n#### Heading 4\n##### Heading 5\n###### Heading 6\n- list 1\n- list 2\n- list 3\n- [x] list 4\n- [x] list 5\n- [ ] list 6\n> Blockquote 1???*Italic* `# or just single line code`\n[link 1](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~\nImage is ok~\n![image1](/icon_small.png "title? yes!")\n```js\nconst codeBlockIsAlso = "OK"\n```',
                                 sign: 'build-in:markdown',
                                 verify: true
                             }
@@ -687,12 +736,11 @@
                             type: valueType,
                             text: matchEntities[valueIndex + 1][i],
                             position,
-                            length: matchEntities[0][i].length
+                            length: matchEntities[0][i].length,
+                            ext: {}
                         }
                         if (['link1', 'link2'].includes(valueType)) {
-                            entity.ext = {
-                                href: matchEntities[valueType === 'link1' ? 2 : 3][i]
-                            }
+                            entity.ext.href = matchEntities[valueType === 'link1' ? 2 : 3][i]
                         }
                         entities.push(entity)
                         position += matchEntities[0][i].length
@@ -707,7 +755,8 @@
                         nodes: []
                     }
 
-                    const pregLine = this.PregMatchAll(/^(#{1,6}) (.*)$|^- \[(x| )\] (.*)$|^\- (.*)$|^> (.*)$|^([\-]+)$|^!\[([^\]]+)\]\(([^ ]+)( ([^\)]+)|)\)$/gm, str)
+                    const pregLine = this.PregMatchAll(/^(#{1,6}) (.*)$|^- \[(x| )\] (.*)$|^\- (.*)$|^> (.*)$|^([\-]+)$|^!\[([^\]]+)\]\(([^ ]+)( ([^\)]+)|)\)|^(\`\`\`(|[\w]+))$/gm, str)
+                    // console.log(pregLine)
                     if (pregLine.length) {
                         const valueIndex = pregLine.slice(1).findIndex((v) => v[0] !== undefined)
                         let valueType
@@ -745,9 +794,18 @@
                                     src: pregLine[valueIndex + 2][0],
                                     title: pregLine[valueIndex + 3][0] ? pregLine[valueIndex + 4][0].trim().replace(/"(.*)"/gm, '$1') : ''
                                 }
+                                break
+                            case 11:
+                                paragraphObject.type = 'code'
+                                paragraphObject.text = pregLine[valueIndex + 1][0]
+                                if (pregLine[valueIndex + 2][0]) {
+                                    paragraphObject.ext = {
+                                        language: pregLine[valueIndex + 2][0]
+                                    }
+                                }
                         }
                     }
-                    if (paragraphObject.type === 'image') {
+                    if (paragraphObject.type === 'image' || paragraphObject.type === 'code') {
                         return paragraphObject
                     }
 

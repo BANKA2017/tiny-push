@@ -21,8 +21,12 @@ func Api() {
 	api.POST("/push/:uuid", ApiPush)
 	api.POST("/push/", ApiPush)
 	api.Any("/*", EchoReject)
-	fe, _ := fs.Sub(assets.EmbeddedFrontent, "fe")
-	e.GET("/*", echo.WrapHandler(http.FileServer(http.FS(fe))))
+	if share.TestMode {
+		e.Static("/*", "assets/fe")
+	} else {
+		fe, _ := fs.Sub(assets.EmbeddedFrontent, "fe")
+		e.GET("/*", echo.WrapHandler(http.FileServer(http.FS(fe))))
+	}
 
 	e.Logger.Fatal(e.Start(share.Address))
 }
