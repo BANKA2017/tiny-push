@@ -222,6 +222,33 @@
                     </button>
                 </template>
             </div>
+            <div v-else-if="route[0] === 'contacts'">
+                <h1 class="text-start mb-2">
+                    <span>Contacts</span>
+                </h1>
+                <details>
+                    <summary>add contact</summary>
+                    <input id="contact" type="text" class="form-control my-1" v-model="add_contact_id" autocomplete="on"
+                        placeholder="Contact (UUID)" required />
+                    <input id="alias" type="text" class="form-control my-1" v-model="add_contact_alias"
+                        autocomplete="on" placeholder="Alias" required />
+                    <button class="btn btn-primary my-1" type="button" id="add-contact"
+                        @click="modifyContacts(add_contact_id, add_contact_alias||add_contact_id)">Add</button>
+                </details>
+                <hr />
+                <template v-for="(contact, i) in contacts" :key="contact.id">
+                    <hr v-if="i!==0" />
+                    <div class="d-flex">
+                        <button class="d-flex flex-column justify-content-between btn btn-dark" style="width: 90%"
+                            @click="() => {uuid = contact.id; route[0] = 'main'}">
+                            <div class="text-truncate bookmark-preview-width">{{ contact.alias }}</div>
+                            <div class="text-truncate bookmark-preview-width">{{ contact.id }}</div>
+                        </button>
+                        <button style="width: 10%" class="btn btn-danger"
+                            @click="modifyContacts(contact.id, contact.alias)">Del</button>
+                    </div>
+                </template>
+            </div>
             <div v-else>
                 <h1 class="text-center mb-2">
                     <div style="display: inline-block; transform: translateY(-0.1em)">
@@ -299,6 +326,8 @@
                         style="width: 100%">PUSH!</button>
                 </details>
                 <p class="text-end mt-5">
+                    <span @click="pushState({ name: 'contacts' }, './#/contacts')" role="button"
+                        class="me-2 hover-underline">#contacts</span>
                     <span @click="pushState({ name: 'bookmarks' }, './#/bookmarks')" role="button"
                         class="me-2 hover-underline">#bookmarks</span>
                     <span @click="pushState({ name: 'help' }, './#/help')" role="button"
@@ -344,6 +373,9 @@
                 push_logs: [],
                 push_panel_open: false,
                 bookmarks: [],
+                contacts: [],
+                add_contact_id: '',
+                add_contact_alias: '',
                 message: {
                     content: '',
                     sign: '',
@@ -462,6 +494,12 @@
                         case 'bookmarks':
                             try {
                                 this.bookmarks = JSON.parse(localStorage.getItem('push:bookmarks') || '[]')
+                            } catch (e) {
+                                console.error(e)
+                            }
+                        case 'contacts':
+                            try {
+                                this.contacts = JSON.parse(localStorage.getItem('push:contacts') || '[]')
                             } catch (e) {
                                 console.error(e)
                             }
@@ -879,6 +917,26 @@
                         this.bookmarks = [...this.bookmarks.slice(0, index), ...this.bookmarks.slice(index + 1)]
                     }
                     localStorage.setItem('push:bookmarks', JSON.stringify(this.bookmarks))
+                },
+                modifyContacts: function (id = '', alias = '') {
+                    try {
+                        this.contacts = JSON.parse(localStorage.getItem('push:contacts') || '[]')
+                    } catch (e) {
+                        console.error(e)
+                    }
+                    if (id === '') {
+                        return
+                    }
+                    const index = this.contacts.findIndex((x) => x.id === id)
+                    if (index === -1) {
+                        this.contacts.unshift({
+                            id,
+                            alias
+                        })
+                    } else {
+                        this.contacts = [...this.contacts.slice(0, index), ...this.contacts.slice(index + 1)]
+                    }
+                    localStorage.setItem('push:contacts', JSON.stringify(this.contacts))
                 },
                 parseDate: function (timestamp = 0) {
                     try {
