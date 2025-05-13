@@ -74,8 +74,9 @@
                 </div>
                 <div :title="message.content">
                     <template v-if="message.originalMode">
-                        <p class="text-break" v-for="(_message, i) in message.content.trim().split('\n')" :key="i"
-                            :dir="isRtlUnicode(_message.trim().charCodeAt(0)) ? 'rtl' : 'ltr'">{{ _message }}</p>
+                        <p class="text-break" style="white-space: pre-wrap;"
+                            :dir="isRtlUnicode(message.content.trim().charCodeAt(0)) ? 'rtl' : 'ltr'">
+                            {{ message.content.trim() }}</p>
                     </template>
                     <template v-else>
                         <div v-for="(paragraph, paragraphIndex) in messageObject" :key="'paragraph-'+paragraph"
@@ -738,25 +739,32 @@
                     if (!sign || !this.vapid) {
                         return false
                     }
-                    const publicKey = await crypto.subtle.importKey(
-                        'raw',
-                        this.base64_to_buffer(this.base64url_to_base64(this.vapid)),
-                        {
-                            name: 'ECDSA',
-                            namedCurve: 'P-256'
-                        },
-                        true,
-                        ['verify']
-                    )
-                    return await crypto.subtle.verify(
-                        {
-                            name: 'ECDSA',
-                            hash: { name: 'SHA-256' }
-                        },
-                        publicKey,
-                        this.base64_to_buffer(this.base64url_to_base64(sign)),
-                        new TextEncoder().encode(content)
-                    )
+
+                    try {
+                        const publicKey = await crypto.subtle.importKey(
+                            'raw',
+                            this.base64_to_buffer(this.base64url_to_base64(this.vapid)),
+                            {
+                                name: 'ECDSA',
+                                namedCurve: 'P-256'
+                            },
+                            true,
+                            ['verify']
+                        )
+                        return await crypto.subtle.verify(
+                            {
+                                name: 'ECDSA',
+                                hash: { name: 'SHA-256' }
+                            },
+                            publicKey,
+                            this.base64_to_buffer(this.base64url_to_base64(sign)),
+                            new TextEncoder().encode(content)
+                        )
+                    } catch (e) {
+                        console.error(e)
+                    }
+
+                    return await false
                 },
                 parseMarkdown: function (str = '') {
                     if (!str) {
