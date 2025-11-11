@@ -63,7 +63,7 @@ func ApiPush(c echo.Context) error {
 	}
 
 	parsedURL, _ := url.ParseRequestURI(endpoint)
-	aud := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
+	aud := parsedURL.Scheme + "://" + parsedURL.Host
 	jwt, _ := functions.BuildJWT(share.ECCPrivateKey, aud, share.Vapid.Sub)
 
 	decodedP256dh, _ := base64.RawURLEncoding.DecodeString(p256dh)

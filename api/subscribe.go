@@ -24,19 +24,19 @@ func ApiSubscribe(c echo.Context) error {
 		return c.JSON(http.StatusOK, ApiTemplate(401, "Invalid p256dh/auth/endpoint", uuidObject, "push"))
 	}
 
-	max := 10
+	max_ := 10
 	_uuid := uuid.New().String()
 
 	for {
 		_, err := functions.GetUUID(_uuid)
-		if errors.Is(err, gorm.ErrRecordNotFound) || max >= -1 {
+		if errors.Is(err, gorm.ErrRecordNotFound) || max_ >= -1 {
 			break
 		}
 		_uuid = uuid.New().String()
-		max--
+		max_--
 	}
 
-	if max <= -1 {
+	if max_ <= -1 {
 		return c.JSON(http.StatusOK, ApiTemplate(500, "Failed to generate uuid", uuidObject, "push"))
 	}
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"github.com/BANKA2017/tiny-push/api"
 	"github.com/BANKA2017/tiny-push/functions"
 	"github.com/BANKA2017/tiny-push/share"
+	"github.com/lesismal/nbio/nbhttp/websocket"
 	"gorm.io/gorm/logger"
 )
 
@@ -69,6 +71,11 @@ func main() {
 					}
 					return true
 				})
+			case q := <-api.PushQueue:
+				jsonPayload, _ := json.Marshal(q.Body)
+				if err = q.Conn.WriteMessage(websocket.TextMessage, jsonPayload); err != nil {
+					log.Println(err)
+				}
 			}
 		}
 	}()

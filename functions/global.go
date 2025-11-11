@@ -25,3 +25,11 @@ func VariableWrapper[T any](anyValue T) T {
 func VariablePtrWrapper[T any](anyValue T) *T {
 	return &anyValue
 }
+
+func When[T any](c bool, d1, d2 T) T {
+	if c {
+		return d1
+	} else {
+		return d2
+	}
+}

@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // ImportKey imports a JWK as an ECDSA private key.
@@ -65,8 +65,8 @@ type GlobalJWTContent struct {
 // BuildJWT builds a JWT token using the provided VAPID object and audience.
 func BuildJWT(privateKey *ecdsa.PrivateKey, aud string, sub string) (string, error) {
 	now := Now
-	if jwt, exists := GlobalJWT.Load(aud); exists {
-		j := jwt.(GlobalJWTContent)
+	if jwt_, exists := GlobalJWT.Load(aud); exists {
+		j := jwt_.(GlobalJWTContent)
 		if j.Content != "" && j.Expire > now.UnixMilli() {
 			return j.Content, nil
 		}
@@ -77,12 +77,12 @@ func BuildJWT(privateKey *ecdsa.PrivateKey, aud string, sub string) (string, err
 	}
 
 	// Create the Claims
-	claims := jwt.StandardClaims{
+	claims := jwt.RegisteredClaims{
 		Subject: sub,
 		// NotBefore: now.Unix(),
 		// IssuedAt:  now.Unix(),
-		ExpiresAt: now.Add(time.Hour).Unix(),
-		Audience:  aud,
+		ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
+		Audience:  []string{aud},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)

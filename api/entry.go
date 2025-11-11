@@ -21,6 +21,12 @@ func Api() {
 	api.POST("/push/:uuid", ApiPush)
 	api.POST("/push/", ApiPush)
 	api.Any("/*", EchoReject)
+
+	apiv2 := api.Group("/v2")
+	apiv2.GET("/ws", ApiV2WsPush)
+	apiv2.POST("/push/:token", ApiV2Push)
+	apiv2.Any("/*", EchoReject)
+
 	if share.TestMode {
 		e.Static("/*", "assets/fe")
 	} else {
