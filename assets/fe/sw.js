@@ -16,6 +16,20 @@ self.addEventListener('push', (event) => {
     }
 })
 
+self.addEventListener('message', (event) => {
+    const data = event.data
+    if (data?.content && data?.sign && data?.timestamp) {
+        self.registration.showNotification('TinyPush', {
+            body: data.content,
+            icon: '/icon_small.png',
+            badge: '/icon_small.png',
+            data,
+            timestamp: data.timestamp,
+            tag: 'message-' + data.timestamp
+        })
+    }
+})
+
 self.addEventListener(
     'notificationclick',
     function (event) {

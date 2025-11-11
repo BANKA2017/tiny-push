@@ -266,16 +266,18 @@
                     </div>
                     <span>TinyPush</span>
                 </h1>
-                <button v-if="pushStatus === 'default'" class="btn btn-primary mb-2" @click="initPushConfig"
-                    style="width: 100%">Subscribe</button>
-                <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="unSubscribe"
-                    style="width: 100%">Unsubscribe</button>
-                <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.</p>
-                <p v-else-if="pushStatus === 'denied'" class="text-center">To receive messages, please allow the browser
-                    to use notification.</p>
-                <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
+                <template v-if="route[0] === 'main'">
+                    <button v-if="pushStatus === 'default'" class="btn btn-primary mb-2" @click="initPushConfig"
+                            style="width: 100%">Subscribe</button>
+                    <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="unSubscribe"
+                            style="width: 100%">Unsubscribe</button>
+                    <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.</p>
+                    <p v-else-if="pushStatus === 'denied'" class="text-center">To receive messages, please allow the browser
+                        to use notification.</p>
+                    <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
+                </template>
 
-                <details @toggle="(event) => {push_panel_open = event.newState === 'open'}" :open="push_panel_open">
+                <details @toggle="(event) => {push_panel_open = event.newState === 'open'}" :open="route[0] === 'v2' ? true : push_panel_open">
                     <summary class="text-center">Send Message</summary>
                     <div class="mb-3 mt-2">
                         <label class="form-label" for="uuid">UUID</label>
@@ -327,8 +329,10 @@
                         style="width: 100%">PUSH!</button>
                 </details>
                 <p class="text-end mt-5">
+                    <!--<span @click="pushState({ name: 'v2' }, './#/v2')" role="button"
+                          class="me-2 hover-underline">#v2</span>-->
                     <span @click="pushState({ name: 'contacts' }, './#/contacts')" role="button"
-                        class="me-2 hover-underline">#contacts</span>
+                          class="me-2 hover-underline">#contacts</span>
                     <span @click="pushState({ name: 'bookmarks' }, './#/bookmarks')" role="button"
                         class="me-2 hover-underline">#bookmarks</span>
                     <span @click="pushState({ name: 'help' }, './#/help')" role="button"
@@ -339,7 +343,7 @@
             </div>
         </div>
         <button class="btn btn-sm btn-danger" style="position: fixed; right: 4vw; top: 2rem; width: 3rem; height: 3rem"
-            @click="pushState({ name: 'main' }, '.')" v-if="route[0] !== 'main' || message.content !== ''">
+            @click="pushState({ name: 'main' }, '.')" v-if="!['main', 'v2'].includes(route[0]) || message.content !== ''">
             <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" viewBox="0 0 16 16">
                 <path
                     d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
@@ -359,6 +363,63 @@
                 .catch((err) => {
                     console.error('err: ', err)
                 })
+        }
+
+        class WsConn {
+            _conn = null
+            _url = ''
+
+            connected = false
+            forceClose = false
+
+            constructor(url = '/api/v2/ws') {
+                if (!url) {
+                    return
+                }
+                this._url = url
+            }
+
+             initWS (token = '') {
+                this._conn = new WebSocket(this._url + '?token=' + token)
+                this._conn.onerror = (event) => {
+                    console.error(event)
+                }
+                this._conn.onmessage = (event) => {
+                    try {
+                        const parsedData = JSON.parse(event.data)
+
+                        if (parsedData.message_type === 'notification') {
+                            switch(parsedData.headers.encoding) {
+                                case 'none':
+                                    navigator.serviceWorker.ready.then(async reg => {
+                                        if (reg.active) {
+                                            reg.active.postMessage({
+                                                content: parsedData.data,
+                                                timestamp: Date.now(),
+                                                sign: 'v2push:none'
+                                            })
+                                        }
+                                    })
+                                    break
+                            }
+                        }
+
+                        // console.log(parsedData, event)
+                    } catch (e) {
+                        console.error(e)
+                    }
+                }
+                this._conn.onopen = (event) => {
+                    this.connected = true
+                }
+                this._conn.onclose = (event) => {
+                    //console.log(event)
+                    this.connected = false
+                    if (!this.forceClose) {
+                        setTimeout(() => {this.initWS(token)}, 2000)
+                    }
+                }
+            }
         }
 
         const endpoint = '.'
@@ -387,7 +448,8 @@
                 copied: {
                     message: false,
                     signature: false
-                }
+                },
+                wsConn: new WsConn('/api/v2/ws')
             }),
 
             computed: {
@@ -452,6 +514,12 @@
                     if (newVal.length < 1) {
                         return
                     }
+
+                    // if (newVal[0]!== 'v2' && this.wsConn.connected) {
+                    //     this.wsConn.forceClose = true
+                    //     this.wsConn._conn.close()
+                    // }
+
                     switch (newVal[0]) {
                         case 'preview':
                             const hashContent = JSON.parse(atob(this.base64url_to_base64(newVal[1])))
@@ -477,8 +545,21 @@
                             break
                         case 'help':
                             this.message = {
-                                content: 'step by step...\n```shell\nuuid="" # Get the uuid from the target client\nmessage="" # What to push\ncurl -XPOST "https://push.nest.moe/api/push/$uuid" -d "message=$message"\n```',
+                                content: 'step by step...\n```shell\nuuid="" # Get the uuid from the target client\nmessage="" # What to push\ncurl -XPOST "https://push.nest.moe/api/push/$uuid" -d "message=$message"\n```\n\n[v2](#/help_v2)',
                                 sign: 'build-in:help',
+                                verify: true
+                            }
+                            break
+                        case 'help_v2':
+                            this.message = {
+                                content: 'step by step...\n- Create a `token` matches `^[A-Za-z0-9+\\-_/]{10,100}$` <https://regex101.com/r/H0a6ec/1>\n' +
+                                    '- Connect to `wss://push.nest.moe/api/v2/ws?token=${token}`\n' +
+                                    '  - Send a heartbeat message containing arbitrary text **every minute** to prevent disconnection.\n' +
+                                    '- Post [webpush requestes](https://web.dev/articles/push-notifications-web-push-protocol) to `https://push.nest.moe/api/v2/push/${token}`\n' +
+                                    '  - Or plaintext: `curl "https://push.nest.moe/api/v2/push/$token" -H "Content-Encoding:none" -d "plaintext content"`\n' +
+                                    '\n' +
+                                    'For testing only. TTL not supported. Retransmission/ACK not supported. Delivery not guaranteed. No SLA. No verification of the sender. Websocket connection can last up to 24 hours.',
+                                sign: 'build-in:helpv2',
                                 verify: true
                             }
                             break
@@ -498,12 +579,22 @@
                             } catch (e) {
                                 console.error(e)
                             }
+                            this.message = { content: '', sign: '', verify: false, timestamp: 0 }
+                            break
                         case 'contacts':
                             try {
                                 this.contacts = JSON.parse(localStorage.getItem('push:contacts') || '[]')
                             } catch (e) {
                                 console.error(e)
                             }
+                            this.message = { content: '', sign: '', verify: false, timestamp: 0 }
+                            break
+                        // case 'v2':
+                        //     this.message = { content: '', sign: '', verify: false, timestamp: 0 }
+                        //     this.wsConn.forceClose = false
+                        //     this.wsConn.connected = false
+                        //     this.wsConn.initWS(this.uuid)
+                        //     break
                         case 'main':
                             this.message = { content: '', sign: '', verify: false, timestamp: 0 }
                             break
@@ -701,33 +792,47 @@
                         return
                     }
                     this.push_status = 1
-                    fetch(endpoint + '/api/push/' + this.uuid, {
-                        headers: {
-                            'content-type': 'application/x-www-form-urlencoded'
-                        },
-                        method: 'POST',
-                        body: new URLSearchParams({
-                            message: this.push_message,
-                            encoding: 1 ? 'aes128gcm' : 'aesgcm'
-                        }).toString()
-                    })
-                        .then((res) => res.json())
+
+                    let fetchHandle = null
+
+                    if (this.route[0] === 'v2') {
+                        fetchHandle = fetch(endpoint + '/api/v2/push/' + this.uuid, {
+                            headers: {
+                                'Content-Length': this.push_message.length,
+                                'Content-Type': "application/octet-stream",
+                                'Content-Encoding': 'none'
+                            },
+                            method: 'POST',
+                            body: this.push_message
+                        })
+                    }else {
+                        fetchHandle = fetch(endpoint + '/api/push/' + this.uuid, {
+                            headers: {
+                                'content-type': 'application/x-www-form-urlencoded'
+                            },
+                            method: 'POST',
+                            body: new URLSearchParams({
+                                message: this.push_message,
+                                encoding: 1 ? 'aes128gcm' : 'aesgcm'
+                            }).toString()
+                        })
+                    }
+
+                    fetchHandle.then((res) => res.json())
                         .then((res) => {
-                            this.push_status = res.code === 201 ? 2 : 3
+                            this.push_status = [201, 202].includes(res.code) ? 2 : 3
                             this.push_logs.unshift({
                                 response: res
                             })
-                            setTimeout(() => {
-                                this.push_status = 0
-                            }, 1500)
                         })
                         .catch((e) => {
                             this.push_status = 3
                             console.error(e)
-                            setTimeout(() => {
-                                this.push_status = 0
-                            }, 1500)
-                        })
+                        }).finally(() => {
+                        setTimeout(() => {
+                            this.push_status = 0
+                        }, 1500)
+                    })
                 },
                 clickEvent: function (e, callback = () => { }) {
                     let selectionObject = window.getSelection()

@@ -100,12 +100,8 @@ func ApiV2Push(c echo.Context) error {
 	}
 
 	token := c.Param("token")
-	if token == "" {
-		return c.JSON(http.StatusBadRequest, ApiTemplate(400, "Invalid token1", false, "push_v2"))
-	} else if len(token) > 100 {
-		return c.JSON(http.StatusBadRequest, ApiTemplate(400, "Invalid token2", false, "push_v2"))
-	} else if !regexp.MustCompile(`^[A-Za-z0-9+\-_/]+$`).MatchString(token) {
-		return c.JSON(http.StatusBadRequest, ApiTemplate(400, "Invalid token3", false, "push_v2"))
+	if !regexp.MustCompile(`^[A-Za-z0-9+\-_/]{10,100}$`).MatchString(token) {
+		return c.JSON(http.StatusBadRequest, ApiTemplate(400, "Invalid token", false, "push_v2"))
 	}
 
 	// parse header
@@ -180,10 +176,10 @@ func ApiV2Push(c echo.Context) error {
 		// if err := cc.Value().WsConn.WriteMessage(websocket.TextMessage, jsonPayload); err != nil {
 		// 	return c.JSON(http.StatusInternalServerError, ApiTemplate(500, "Failed", payload, "push"))
 		// } else {
-		return c.JSON(http.StatusCreated, ApiTemplate(201, "OK", payload, "push"))
+		return c.JSON(http.StatusCreated, ApiTemplate(201, "OK", true, "push"))
 		// }
 	} else {
-		return c.JSON(http.StatusAccepted, ApiTemplate(200, "No conn", payload, "push"))
+		return c.JSON(http.StatusAccepted, ApiTemplate(200, "No conn", true, "push"))
 	}
 }
 
@@ -200,6 +196,10 @@ var WsConnCache = ttlcache.New(
 
 func ApiV2WsPush(c echo.Context) error {
 	token := strings.TrimSpace(c.QueryParams().Get("token"))
+
+	if !regexp.MustCompile(`^[A-Za-z0-9+\-_/]{10,100}$`).MatchString(token) {
+		return c.String(http.StatusUnauthorized, "")
+	}
 
 	if cc := WsConnCache.Get(token); cc != nil {
 		// disconnect
