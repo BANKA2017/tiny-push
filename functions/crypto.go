@@ -13,10 +13,10 @@ import (
 	"errors"
 	"math/big"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt"
+	"github.com/jellydator/ttlcache/v3"
 )
 
 // ImportKey imports a JWK as an ECDSA private key.
@@ -55,7 +55,10 @@ func GetPublicKey(privateKey *ecdsa.PrivateKey) string {
 	return strings.ReplaceAll(base64.RawURLEncoding.EncodeToString(pk.Bytes()), "=", "")
 }
 
-var GlobalJWT sync.Map
+var GlobalJWT = ttlcache.New(
+	ttlcache.WithTTL[string, GlobalJWTContent](time.Minute*30),
+	ttlcache.WithDisableTouchOnHit[string, GlobalJWTContent](),
+)
 
 type GlobalJWTContent struct {
 	Content string
@@ -65,8 +68,8 @@ type GlobalJWTContent struct {
 // BuildJWT builds a JWT token using the provided VAPID object and audience.
 func BuildJWT(privateKey *ecdsa.PrivateKey, aud string, sub string) (string, error) {
 	now := Now
-	if jwt_, exists := GlobalJWT.Load(aud); exists {
-		j := jwt_.(GlobalJWTContent)
+	if jwt_ := GlobalJWT.Get(aud); jwt_ != nil {
+		j := jwt_.Value()
 		if j.Content != "" && j.Expire > now.UnixMilli() {
 			return j.Content, nil
 		}
@@ -77,21 +80,24 @@ func BuildJWT(privateKey *ecdsa.PrivateKey, aud string, sub string) (string, err
 	}
 
 	// Create the Claims
-	claims := jwt.RegisteredClaims{
+	/// We must use the `jwt.StandardClaims` to use <string> `Audience`
+	claims := jwt.StandardClaims{
 		Subject: sub,
 		// NotBefore: now.Unix(),
 		// IssuedAt:  now.Unix(),
-		ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
-		Audience:  []string{aud},
+		ExpiresAt: now.Add(time.Hour).Unix(),
+		Audience:  aud,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+
 	ss, err := token.SignedString(privateKey)
+
 	if err == nil {
-		GlobalJWT.Store(aud, GlobalJWTContent{
+		GlobalJWT.Set(aud, GlobalJWTContent{
 			Content: ss,
 			Expire:  now.Add(time.Minute * 30).UnixMilli(),
-		})
+		}, ttlcache.DefaultTTL)
 	}
 
 	return ss, err

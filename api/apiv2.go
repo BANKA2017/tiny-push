@@ -183,7 +183,7 @@ func ApiV2Push(c echo.Context) error {
 		return c.JSON(http.StatusCreated, ApiTemplate(201, "OK", payload, "push"))
 		// }
 	} else {
-		return c.JSON(http.StatusAccepted, ApiTemplate(202, "No conn", payload, "push"))
+		return c.JSON(http.StatusAccepted, ApiTemplate(200, "No conn", payload, "push"))
 	}
 }
 

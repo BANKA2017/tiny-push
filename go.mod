@@ -3,6 +3,7 @@ module github.com/BANKA2017/tiny-push
 go 1.25.0
 
 require (
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/jellydator/ttlcache/v3 v3.4.0

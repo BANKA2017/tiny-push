@@ -62,15 +62,6 @@ func main() {
 			case <-deleteExpiredUUID.C:
 				// TODO ??
 				functions.GormDB.W.Where("last_used <= ?", functions.Now.Add(time.Hour*24*30*3*-1).UnixMilli())
-			case <-deleteExpiredGlobalJWT.C:
-				now := functions.Now
-				functions.GlobalJWT.Range(func(key, value any) bool {
-					v, _ := value.(functions.GlobalJWTContent)
-					if v.Expire <= now.UnixMilli() {
-						functions.GlobalJWT.Delete(key)
-					}
-					return true
-				})
 			case q := <-api.PushQueue:
 				jsonPayload, _ := json.Marshal(q.Body)
 				if err = q.Conn.WriteMessage(websocket.TextMessage, jsonPayload); err != nil {
