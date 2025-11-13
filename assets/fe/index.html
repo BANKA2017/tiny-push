@@ -44,7 +44,7 @@
 </head>
 
 <body
-    style="display: flex; justify-content: center; min-height: 100vh; padding: 20px; flex-direction: column; overflow-y: auto">
+    style="display: flex; justify-content: center; min-height: 100vh; padding: 30px; flex-direction: column; overflow-y: auto">
     <div id="app" class="d-flex justify-content-center">
         <div style="max-width: 600px; width: 95vw">
             <div v-if="message.content" style="padding-top: 5rem; padding-bottom: 2rem">
@@ -54,8 +54,24 @@
                         <em class="lead" v-else-if="message.sign?.startsWith('build-in:')">{{ message.sign }}</em>
                         <div role="button" @click="writeClipboardText(message.sign, 'signature')"
                             style="display: inline-block" :title="message.sign ? message.sign : '<unsigned>'">
-                            <svg v-if="message.verify " xmlns="http://www.w3.org/2000/svg" width="1.1em" height="1.1em"
-                                viewBox="0 0 32 32">
+                            <svg v-if="message.sign.startsWith('v2push:')" xmlns=" http://www.w3.org/2000/svg"
+                                width="1.1em" height="1.1em"
+                                viewBox="0 0 32 32"><!-- Icon from Fluent Emoji Flat by Microsoft Corporation - https://github.com/microsoft/fluentui-emoji/blob/main/LICENSE -->
+                                <g fill="none">
+                                    <path fill="#9B9B9B"
+                                        d="M9.528 7a8.5 8.5 0 0 0-8.5 8.5v7a8.5 8.5 0 0 0 15 5.477a8.5 8.5 0 0 0 15-5.477v-7a8.5 8.5 0 0 0-15-5.477A8.48 8.48 0 0 0 9.528 7" />
+                                    <path fill="#fff"
+                                        d="M9.528 8a7.5 7.5 0 0 0-7.5 7.5v7a7.5 7.5 0 0 0 14 3.744a7.5 7.5 0 0 0 14-3.744v-7a7.5 7.5 0 0 0-14-3.744A7.5 7.5 0 0 0 9.528 8" />
+                                    <path fill="#D3D3D3"
+                                        d="M15.028 15.5c0-1.364.364-2.642 1-3.744A7.53 7.53 0 0 0 12.226 8.5h-.167c1.094.656 1.938 3.25 1.938 4.5v12.125c0 1.375-.157 3.093-1.937 4.437a7.53 7.53 0 0 0 3.968-3.318a7.47 7.47 0 0 1-1-3.744zm15 0a7.5 7.5 0 0 0-4.802-7h-.167c1.656 1.094 2.906 3.063 2.906 4.531V25c0 1.375-1.124 3.218-2.905 4.562a7.5 7.5 0 0 0 4.968-7.062z" />
+                                    <path fill="#321B41"
+                                        d="M6.59 13a3.5 3.5 0 0 0-3.5 3.5v5a3.5 3.5 0 1 0 7 0v-5a3.5 3.5 0 0 0-3.5-3.5m12.938 0a3.5 3.5 0 0 0-3.5 3.5v5a3.5 3.5 0 1 0 7 0v-5a3.5 3.5 0 0 0-3.5-3.5" />
+                                    <path fill="#F4F4F4"
+                                        d="M8.766 16.861c.372-.31.355-.942-.038-1.414s-1.012-.603-1.384-.294s-.354.942.039 1.414c.392.471 1.012.603 1.383.294m12.997 0c.371-.31.354-.942-.039-1.414s-1.012-.603-1.383-.294c-.372.309-.354.942.038 1.414c.393.471 1.012.603 1.384.294" />
+                                </g>
+                            </svg>
+                            <svg v-else-if="message.verify" xmlns="http://www.w3.org/2000/svg" width="1.1em"
+                                height="1.1em" viewBox="0 0 32 32">
                                 <g fill="none">
                                     <path fill="#00D26A"
                                         d="M2 6a4 4 0 0 1 4-4h20a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z" />
@@ -80,7 +96,7 @@
                     </template>
                     <template v-else>
                         <div v-for="(paragraph, paragraphIndex) in messageObject" :key="'paragraph-'+paragraph"
-                            class="my-2 text-break"
+                            :class="{'my-2': true, 'text-break': true}"
                             :dir="isRtlUnicode((paragraph?.text || '').trim().charCodeAt(0)) ? 'rtl' : 'ltr'">
                             <component :is="'h' + paragraph?.ext?.level" v-if="paragraph?.type === 'heading'">
                                 <template v-for="node in paragraph.nodes" :key="node.text">
@@ -95,7 +111,8 @@
                                     <del v-else-if="node?.type === 'delete'">{{ node.text }}</del>
                                 </template>
                             </component>
-                            <li v-else-if="paragraph?.type.startsWith('list')">
+                            <li v-else-if="paragraph?.type.startsWith('list')"
+                                :class="{'ms-2': paragraph?.ext?.depth === 1, 'ms-3': paragraph?.ext?.depth >= 2 }">
                                 <input v-if="paragraph?.type === 'list_check'" class="form-check-input me-2"
                                     type="checkbox" :checked="paragraph?.ext?.value" />
                                 <template v-for="node in paragraph.nodes" :key="node.text">
@@ -241,7 +258,7 @@
                     <hr v-if="i!==0" />
                     <div class="d-flex">
                         <button class="d-flex flex-column justify-content-between btn btn-dark" style="width: 90%"
-                            @click="() => {uuid = contact.id; route[0] = 'main'}">
+                            @click="() => {uuid = contact.id; pushState({ name: main_version >= 2 ? 'v2' : 'main' }, main_version >= 2 ? './#/v2' : '.')}">
                             <div class="text-truncate bookmark-preview-width">{{ contact.alias }}</div>
                             <div class="text-truncate bookmark-preview-width">{{ contact.id }}</div>
                         </button>
@@ -265,31 +282,49 @@
                         </svg>
                     </div>
                     <span>TinyPush</span>
+                    <span v-if="route[0] === 'v2'" class="ms-1 fs-6" role="button"
+                        @click="() => {if (!wsConn.connected) {reconnectWs()}}">{{
+                        wsConn.connected ? 'online' : 'offline'
+                        }}</span>
                 </h1>
                 <template v-if="route[0] === 'main'">
                     <button v-if="pushStatus === 'default'" class="btn btn-primary mb-2" @click="initPushConfig"
-                            style="width: 100%">Subscribe</button>
+                        style="width: 100%">Subscribe</button>
                     <button v-if="pushStatus === 'granted'" class="btn btn-danger mb-2" @click="unSubscribe"
-                            style="width: 100%">Unsubscribe</button>
-                    <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.</p>
-                    <p v-else-if="pushStatus === 'denied'" class="text-center">To receive messages, please allow the browser
+                        style="width: 100%">Unsubscribe</button>
+                    <p v-else-if="pushStatus === 'no'" class="text-center">The browser does not support notifications.
+                    </p>
+                    <p v-else-if="pushStatus === 'denied'" class="text-center">To receive messages, please allow the
+                        browser
                         to use notification.</p>
                     <p class="text-center">If on iOS, add this page to the Home Screen for it to work.</p>
                 </template>
 
-                <details @toggle="(event) => {push_panel_open = event.newState === 'open'}" :open="route[0] === 'v2' ? true : push_panel_open">
+                <details @toggle="(event) => {push_panel_open = event.newState === 'open'}"
+                    :open="route[0] === 'v2' ? true : push_panel_open">
                     <summary class="text-center">Send Message</summary>
                     <div class="mb-3 mt-2">
                         <label class="form-label" for="uuid">UUID</label>
                         <div class="input-group">
                             <input id="uuid" type="text" class="form-control" v-model="uuid"
                                 aria-describedby="restore-uuid" autocomplete="on" placeholder="UUID" required />
-                            <button class="btn btn-secondary" type="button" id="restore-uuid"
+                            <button v-if="route[0] === 'v2'" class="btn btn-secondary" type="button" id="restore-uuid"
+                                @click="wsConn.close(reconnectWs)">Connect</button>
+                            <button v-else class="btn btn-secondary" type="button" id="restore-uuid"
                                 @click="restoreUUID">Restore</button>
                         </div>
                         <div class="form-text" id="form-text-uuid">The message will be pushed to the device
                             corresponding to the uuid</div>
                     </div>
+
+                    <details class="mb-3">
+                        <summary>Edit jwk</summary>
+                        <div class="input-group mt-2">
+                            <textarea rows="5" id="jwk_config" class="form-control" v-model="wsConnJwk"
+                                autocomplete="off" placeholder="jwk object" required></textarea>
+                        </div>
+                    </details>
+
                     <hr />
 
                     <div class="mb-3">
@@ -329,13 +364,17 @@
                         style="width: 100%">PUSH!</button>
                 </details>
                 <p class="text-end mt-5">
-                    <!--<span @click="pushState({ name: 'v2' }, './#/v2')" role="button"
-                          class="me-2 hover-underline">#v2</span>-->
+                    <span v-if="route[0] === 'main'" @click="pushState({ name: 'v2' }, './#/v2')" role="button"
+                        class="me-2 hover-underline">#v2</span>
+                    <span v-else @click="pushState({ name: 'main' }, './')" role="button"
+                        class="me-2 hover-underline">#main</span>
                     <span @click="pushState({ name: 'contacts' }, './#/contacts')" role="button"
-                          class="me-2 hover-underline">#contacts</span>
+                        class="me-2 hover-underline">#contacts</span>
                     <span @click="pushState({ name: 'bookmarks' }, './#/bookmarks')" role="button"
                         class="me-2 hover-underline">#bookmarks</span>
-                    <span @click="pushState({ name: 'help' }, './#/help')" role="button"
+                    <span v-if="route[0] === 'v2'" @click="pushState({ name: 'help_v2' }, './#/help_v2')" role="button"
+                        class="me-2 hover-underline">#help</span>
+                    <span v-else @click="pushState({ name: 'help' }, './#/help')" role="button"
                         class="me-2 hover-underline">#help</span>
                     <span @click="pushState({ name: 'about' }, './#/about')" class="hover-underline"
                         role="button">#about</span>
@@ -343,7 +382,8 @@
             </div>
         </div>
         <button class="btn btn-sm btn-danger" style="position: fixed; right: 4vw; top: 2rem; width: 3rem; height: 3rem"
-            @click="pushState({ name: 'main' }, '.')" v-if="!['main', 'v2'].includes(route[0]) || message.content !== ''">
+            @click="pushState({ name: main_version >= 2 ? 'v2' : 'main' }, main_version >= 2 ? './#/v2' : '.')"
+            v-if="!['main', 'v2'].includes(route[0]) || message.content !== ''">
             <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" viewBox="0 0 16 16">
                 <path
                     d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
@@ -353,6 +393,7 @@
     <!--load css and js-->
     <script src="https://cdn.jsdelivr.net/npm/vue@3.4.24/dist/vue.global.prod.js"
         integrity="sha256-NuLZKbx8rSWxfBrjvEqgCUKQ+dIBM3WUKEOAqw/NfIw=" crossorigin="anonymous"></script>
+    <script src="/crypto.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker
@@ -372,36 +413,86 @@
             connected = false
             forceClose = false
 
-            constructor(url = '/api/v2/ws') {
+            intervalHandle = null
+
+            key = null
+
+            constructor(url = '/api/v2/ws', key = null) {
                 if (!url) {
                     return
                 }
                 this._url = url
+
+                this.key = key
             }
 
-             initWS (token = '') {
-                this._conn = new WebSocket(this._url + '?token=' + token)
+            initWS(token = '') {
+                if (this.forceClose || token.length < 10) {
+                    return
+                }
+
+                this._conn = new WebSocket(this._url + '/' + token)
                 this._conn.onerror = (event) => {
                     console.error(event)
                 }
-                this._conn.onmessage = (event) => {
+                this._conn.onmessage = async (event) => {
                     try {
                         const parsedData = JSON.parse(event.data)
 
-                        if (parsedData.message_type === 'notification') {
-                            switch(parsedData.headers.encoding) {
-                                case 'none':
-                                    navigator.serviceWorker.ready.then(async reg => {
-                                        if (reg.active) {
-                                            reg.active.postMessage({
-                                                content: parsedData.data,
-                                                timestamp: Date.now(),
-                                                sign: 'v2push:none'
-                                            })
+                        switch (parsedData.message_type) {
+                            case 'notification':
+                                let postMessage = {}
+                                switch (parsedData.headers.encoding) {
+                                    case 'none':
+                                        postMessage = {
+                                            content: parsedData.data,
+                                            timestamp: Date.now(),
+                                            sign: 'v2push:none'
                                         }
-                                    })
-                                    break
-                            }
+                                        break
+                                    case 'aesgcm':
+                                    case 'aes128gcm':
+                                        if (!this.key) {
+                                            throw ('No decryption key available')
+                                        }
+
+                                        let jwk = this.key
+
+                                        const ke = await importECCKey(jwk)
+                                        const x = base64_to_buffer(base64url_to_base64(jwk.x));
+                                        const y = base64_to_buffer(base64url_to_base64(jwk.y))
+                                        const public_key = concatBuffer(
+                                            new Uint8Array([0x04]),
+                                            x, y
+                                        )
+
+                                        const decryptedData = await decryptMessage({
+                                            data: parsedData,
+                                            key: ke,
+                                            public_key,
+                                            auth: 'BTkGrIgIAKdpmJ5TBWJn9A'
+                                        })
+
+                                        postMessage = {
+                                            content: decryptedData.data,
+                                            timestamp: Date.now(),
+                                            sign: 'v2push:' + parsedData.headers.encoding
+                                        }
+
+                                        break
+                                }
+
+                                navigator.serviceWorker.ready.then(async reg => {
+                                    if (reg.active) {
+                                        reg.active.postMessage(postMessage)
+                                    }
+                                })
+                                break
+                            case 'close':
+                                if (parsedData.data === 'kick') {
+                                    this.forceClose = true
+                                }
+                                break
                         }
 
                         // console.log(parsedData, event)
@@ -410,14 +501,36 @@
                     }
                 }
                 this._conn.onopen = (event) => {
+                    if (this.connected) {
+                        return
+                    }
+
                     this.connected = true
+
+                    this.intervalHandle = setInterval(() => {
+                        try {
+                            this._conn.send('')
+                        } catch { }
+                    }, 45000)
                 }
                 this._conn.onclose = (event) => {
+                    if (!this.connected) {
+                        return
+                    }
+
                     //console.log(event)
                     this.connected = false
+                    clearInterval(this.intervalHandle)
                     if (!this.forceClose) {
-                        setTimeout(() => {this.initWS(token)}, 2000)
+                        setTimeout(() => { this.initWS(token) }, 2000)
                     }
+                }
+            }
+            close(callback = null) {
+                this.forceClose = true
+                this?._conn.close()
+                if (callback) {
+                    setTimeout(callback, 2000)
                 }
             }
         }
@@ -445,11 +558,13 @@
                     timestamp: 0
                 },
                 route: ['main'],
+                main_version: 0,
                 copied: {
                     message: false,
                     signature: false
                 },
-                wsConn: new WsConn('/api/v2/ws')
+                wsConn: new WsConn('/api/v2/ws'),
+                wsConnJwk: null
             }),
 
             computed: {
@@ -467,8 +582,10 @@
                     })
                     let inCodeBlock = false
                     let tmpCodeParagraphData = initTmpCodeParagraphData()
+
+                    let previousType = ''
                     for (const message of this.message.content.split('\n')) {
-                        const paragraphData = this.newMessageObject(message)
+                        const paragraphData = this.newMessageObject(message, previousType)
                         if (paragraphData?.type === 'code' || inCodeBlock) {
                             if (paragraphData?.type === 'code') {
                                 inCodeBlock = !inCodeBlock
@@ -504,6 +621,19 @@
                 }
             },
             watch: {
+                // wsConn: {
+                //     handler(newVal, oldVal) {
+                //         console.log(newVal, oldVal)
+                //     },
+                //     deep: true
+                // },
+                wsConnJwk(newVal, oldVal) {
+                    try {
+                        this.wsConn.key = JSON.parse(newVal)
+                    } catch (e) {
+                        this.wsConn.key = null
+                    }
+                },
                 async vapid(newVal, oldVal) {
                     if (newVal != '' && this.route?.[0] === 'preview') {
                         const signPayload = new URLSearchParams({ content: this.message.content || '', timestamp: String(this.message.timestamp || 0) }).toString()
@@ -515,10 +645,10 @@
                         return
                     }
 
-                    // if (newVal[0]!== 'v2' && this.wsConn.connected) {
-                    //     this.wsConn.forceClose = true
-                    //     this.wsConn._conn.close()
-                    // }
+                    if (newVal[0] === 'main' && this.wsConn.connected) {
+                        this.wsConn.forceClose = true
+                        this.wsConn._conn.close()
+                    }
 
                     switch (newVal[0]) {
                         case 'preview':
@@ -553,10 +683,10 @@
                         case 'help_v2':
                             this.message = {
                                 content: 'step by step...\n- Create a `token` matches `^[A-Za-z0-9+\\-_/]{10,100}$` <https://regex101.com/r/H0a6ec/1>\n' +
-                                    '- Connect to `wss://push.nest.moe/api/v2/ws?token=${token}`\n' +
-                                    '  - Send a heartbeat message containing arbitrary text **every minute** to prevent disconnection.\n' +
+                                    '- Connect to `wss://push.nest.moe/api/v2/ws/${token}`\n' +
+                                    ' - Send a heartbeat message containing arbitrary text **every minute** to prevent disconnection.\n' +
                                     '- Post [webpush requestes](https://web.dev/articles/push-notifications-web-push-protocol) to `https://push.nest.moe/api/v2/push/${token}`\n' +
-                                    '  - Or plaintext: `curl "https://push.nest.moe/api/v2/push/$token" -H "Content-Encoding:none" -d "plaintext content"`\n' +
+                                    ' - Or plaintext: `curl "https://push.nest.moe/api/v2/push/$token" -H "Content-Encoding:none" -d "plaintext content"`\n' +
                                     '\n' +
                                     'For testing only. TTL not supported. Retransmission/ACK not supported. Delivery not guaranteed. No SLA. No verification of the sender. Websocket connection can last up to 24 hours.',
                                 sign: 'build-in:helpv2',
@@ -566,7 +696,7 @@
                         case 'markdown':
                             this.message = {
                                 content:
-                                    '# Heading 1\n## Heading 2\n### Heading 3\n#### Heading 4\n##### Heading 5\n###### Heading 6\n- list 1\n- list 2\n- list 3\n- [x] list 4\n- [x] list 5\n- [ ] list 6\n> Blockquote 1???*Italic* `# or just single line code`\n[link 1](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~\nImage is ok~\n![image1](/icon_small.png "title? yes!")\n```js\nconst codeBlockIsAlso = "OK"\n```',
+                                    '# Heading 1\n## Heading 2\n### Heading 3\n#### Heading 4\n##### Heading 5\n###### Heading 6\n- list 1\n - list 2\n  - list 3\n- [x] list 4\n- [x] list 5\n- [ ] list 6\n> Blockquote 1???*Italic* `# or just single line code`\n[link 1](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~\nImage is ok~\n![image1](/icon_small.png "title? yes!")\n```js\nconst codeBlockIsAlso = "OK"\n```',
                                 sign: 'build-in:markdown',
                                 verify: true
                             }
@@ -589,13 +719,13 @@
                             }
                             this.message = { content: '', sign: '', verify: false, timestamp: 0 }
                             break
-                        // case 'v2':
-                        //     this.message = { content: '', sign: '', verify: false, timestamp: 0 }
-                        //     this.wsConn.forceClose = false
-                        //     this.wsConn.connected = false
-                        //     this.wsConn.initWS(this.uuid)
-                        //     break
+                        case 'v2':
+                            this.main_version = 2
+                            this.message = { content: '', sign: '', verify: false, timestamp: 0 }
+                            this.reconnectWs()
+                            break
                         case 'main':
+                            this.main_version = 1
                             this.message = { content: '', sign: '', verify: false, timestamp: 0 }
                             break
                     }
@@ -625,6 +755,10 @@
                     })
             },
             methods: {
+                reconnectWs() {
+                    this.wsConn.forceClose = false
+                    this.wsConn.initWS(this.uuid)
+                },
                 routerCase: function (to) {
                     if (!to) {
                         to = this.route = ['main']
@@ -805,7 +939,7 @@
                             method: 'POST',
                             body: this.push_message
                         })
-                    }else {
+                    } else {
                         fetchHandle = fetch(endpoint + '/api/push/' + this.uuid, {
                             headers: {
                                 'content-type': 'application/x-www-form-urlencoded'
@@ -820,7 +954,7 @@
 
                     fetchHandle.then((res) => res.json())
                         .then((res) => {
-                            this.push_status = [201, 202].includes(res.code) ? 2 : 3
+                            this.push_status = [200, 201, 202].includes(res.code) ? 2 : 3
                             this.push_logs.unshift({
                                 response: res
                             })
@@ -829,10 +963,10 @@
                             this.push_status = 3
                             console.error(e)
                         }).finally(() => {
-                        setTimeout(() => {
-                            this.push_status = 0
-                        }, 1500)
-                    })
+                            setTimeout(() => {
+                                this.push_status = 0
+                            }, 1500)
+                        })
                 },
                 clickEvent: function (e, callback = () => { }) {
                     let selectionObject = window.getSelection()
@@ -907,52 +1041,59 @@
                         nodes: []
                     }
 
-                    const pregLine = this.PregMatchAll(/^(#{1,6}) (.*)$|^- \[(x| )\] (.*)$|^\- (.*)$|^> (.*)$|^([\-]+)$|^!\[([^\]]+)\]\(([^ ]+)( ([^\)]+)|)\)|^(\`\`\`(|[\w]+))$/gm, str)
+                    let pregLine = this.PregMatchAll(/^(#{1,6}) (.*)$|^([ ]+|)- \[(x| )\] (.*)$|^([ ]+|)- (.*)$|^> (.*)$|^([\-]+)$|^!\[([^\]]+)\]\(([^ ]+)( ([^\)]+)|)\)|^(\`\`\`(|[\w]+))$/gm, str)
                     // console.log(pregLine)
+
+
                     if (pregLine.length) {
-                        const valueIndex = pregLine.slice(1).findIndex((v) => v[0] !== undefined)
+                        pregLine = pregLine.slice(1)
+                        const valueIndex = pregLine.findIndex((v) => v[0] !== undefined)
                         let valueType
                         switch (valueIndex) {
                             case 0:
                                 paragraphObject.type = 'heading'
-                                paragraphObject.text = pregLine[valueIndex + 2][0]
+                                paragraphObject.text = pregLine[valueIndex + 1][0]
                                 paragraphObject.ext = {
-                                    level: pregLine[valueIndex + 1][0].length
+                                    level: pregLine[valueIndex][0].length
                                 }
                                 break
                             case 2:
                                 paragraphObject.type = 'list_check'
                                 paragraphObject.text = pregLine[valueIndex + 2][0]
                                 paragraphObject.ext = {
-                                    value: pregLine[valueIndex + 1][0] === 'x'
+                                    value: pregLine[valueIndex + 1][0] === 'x',
+                                    depth: pregLine[valueIndex][0].length,
                                 }
-                                break
-                            case 4:
-                                paragraphObject.type = 'list'
-                                paragraphObject.text = pregLine[valueIndex + 1][0]
                                 break
                             case 5:
-                                paragraphObject.type = 'blockquote'
-                                paragraphObject.text = pregLine[valueIndex + 1][0]
-                                break
-                            case 6:
-                                paragraphObject.type = 'line'
-                                paragraphObject.text = pregLine[valueIndex + 1][0]
-                                break
-                            case 7:
-                                paragraphObject.type = 'image'
+                                paragraphObject.type = 'list'
                                 paragraphObject.text = pregLine[valueIndex + 1][0]
                                 paragraphObject.ext = {
-                                    src: pregLine[valueIndex + 2][0],
-                                    title: pregLine[valueIndex + 3][0] ? pregLine[valueIndex + 4][0].trim().replace(/"(.*)"/gm, '$1') : ''
+                                    depth: pregLine[valueIndex][0].length,
                                 }
                                 break
-                            case 11:
+                            case 7:
+                                paragraphObject.type = 'blockquote'
+                                paragraphObject.text = pregLine[valueIndex][0]
+                                break
+                            case 8:
+                                paragraphObject.type = 'line'
+                                paragraphObject.text = pregLine[valueIndex][0]
+                                break
+                            case 9:
+                                paragraphObject.type = 'image'
+                                paragraphObject.text = pregLine[valueIndex][0]
+                                paragraphObject.ext = {
+                                    src: pregLine[valueIndex + 1][0],
+                                    title: pregLine[valueIndex + 2][0] ? pregLine[valueIndex + 3][0].trim().replace(/"(.*)"/gm, '$1') : ''
+                                }
+                                break
+                            case 13:
                                 paragraphObject.type = 'code'
-                                paragraphObject.text = pregLine[valueIndex + 1][0]
-                                if (pregLine[valueIndex + 2][0]) {
+                                paragraphObject.text = pregLine[valueIndex][0]
+                                if (pregLine[valueIndex + 1][0]) {
                                     paragraphObject.ext = {
-                                        language: pregLine[valueIndex + 2][0]
+                                        language: pregLine[valueIndex + 1][0]
                                     }
                                 }
                         }

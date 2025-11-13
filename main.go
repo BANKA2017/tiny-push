@@ -48,20 +48,25 @@ func main() {
 	}
 
 	updateTimeTicker := time.NewTicker(time.Millisecond * 200)
-	deleteExpiredUUID := time.NewTicker(time.Minute)
+	oneMinuteTicker := time.NewTicker(time.Minute)
 	deleteExpiredGlobalJWT := time.NewTicker(time.Minute)
 	defer updateTimeTicker.Stop()
-	defer deleteExpiredUUID.Stop()
+	defer oneMinuteTicker.Stop()
 	defer deleteExpiredGlobalJWT.Stop()
+
+	// ws conn
+	go api.WsConnCache.Start()
+	defer api.WsConnCache.Stop()
 
 	go func() {
 		for {
 			select {
 			case <-updateTimeTicker.C:
 				functions.UpdateNow()
-			case <-deleteExpiredUUID.C:
+			case <-oneMinuteTicker.C:
 				// TODO ??
 				functions.GormDB.W.Where("last_used <= ?", functions.Now.Add(time.Hour*24*30*3*-1).UnixMilli())
+				api.WsConnCache.DeleteExpired()
 			case q := <-api.PushQueue:
 				jsonPayload, _ := json.Marshal(q.Body)
 				if err = q.Conn.WriteMessage(websocket.TextMessage, jsonPayload); err != nil {

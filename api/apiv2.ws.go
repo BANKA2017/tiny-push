@@ -1,0 +1,126 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/jellydator/ttlcache/v3"
+	"github.com/labstack/echo/v4"
+	"github.com/lesismal/nbio/nbhttp/websocket"
+)
+
+var (
+	upgrader = newUpgrader()
+)
+
+func newUpgrader() *websocket.Upgrader {
+	u := websocket.NewUpgrader()
+	u.KeepaliveTime = time.Hour * 24
+	u.OnOpen(func(c *websocket.Conn) {
+		// echo
+		fmt.Println("OnOpen:", c.RemoteAddr().String())
+	})
+	u.OnMessage(func(c *websocket.Conn, messageType websocket.MessageType, data []byte) {
+		// echo
+		fmt.Println("OnMessage:", messageType, string(data))
+		c.WriteMessage(messageType, data)
+	})
+	u.OnClose(func(c *websocket.Conn, err error) {
+		fmt.Println("OnClose:", c.RemoteAddr().String(), err)
+	})
+	return u
+}
+
+// like autopush
+type PushBody struct {
+	MessageType string `json:"message_type"`
+	ChannelID   string `json:"channel_id"`
+	Version     string `json:"version"`
+	Data        string `json:"data"`
+	Headers     *struct {
+		Encryption string `json:"encryption,omitempty"`
+		CryptoKey  string `json:"crypto_key,omitempty"`
+		Encoding   string `json:"encoding,omitempty"`
+	} `json:"headers,omitempty"`
+}
+
+type PushQueueItem struct {
+	Conn *websocket.Conn
+	Body PushBody
+}
+
+type WsConnStruct struct {
+	WsConn *websocket.Conn
+	Token  string
+	// RemoteAddr string
+}
+
+var WsConnCache = ttlcache.New(
+	ttlcache.WithCapacity[string, *WsConnStruct](5000),
+	ttlcache.WithTTL[string, *WsConnStruct](time.Hour*24),
+)
+
+func init() {
+	WsConnCache.OnEviction(func(ctx context.Context, reason ttlcache.EvictionReason, i *ttlcache.Item[string, *WsConnStruct]) {
+		wsconn := i.Value()
+
+		if wsconn.WsConn == nil {
+			return
+		}
+
+		body := PushBody{
+			MessageType: "close",
+			ChannelID:   wsconn.Token,
+			Version:     wsconn.Token,
+		}
+
+		if i.IsExpired() {
+			body.Data = "expired"
+		} else {
+			body.Data = "kick"
+		}
+
+		binBody, _ := json.Marshal(body)
+
+		wsconn.WsConn.WriteMessage(websocket.TextMessage, binBody)
+
+		wsconn.WsConn.Close()
+	})
+}
+
+func ApiV2WsPush(c echo.Context) error {
+	token := c.Param("token")
+
+	if token == "" {
+		token = strings.TrimSpace(c.QueryParams().Get("token"))
+	}
+
+	if !regexp.MustCompile(`^[A-Za-z0-9+\-_/]{10,100}$`).MatchString(token) {
+		return c.String(http.StatusUnauthorized, "")
+	}
+
+	if cc := WsConnCache.Get(token); cc != nil {
+		// disconnect
+		WsConnCache.Delete(token)
+	}
+
+	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+	if err != nil {
+		return err
+	}
+
+	connStruct := &WsConnStruct{
+		WsConn: conn,
+		Token:  token,
+		// RemoteAddr: conn.RemoteAddr().String(),
+	}
+
+	WsConnCache.Set(token, connStruct, ttlcache.DefaultTTL)
+
+	return nil //functions.WsRPC.WebsocketServer(ctx, c.Response().Writer, c.Request())
+}

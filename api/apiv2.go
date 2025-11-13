@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/base64"
-	"fmt"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -10,34 +10,10 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/jellydator/ttlcache/v3"
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
-	"github.com/lesismal/nbio/nbhttp/websocket"
 )
-
-var (
-	upgrader = newUpgrader()
-)
-
-func newUpgrader() *websocket.Upgrader {
-	u := websocket.NewUpgrader()
-	u.OnOpen(func(c *websocket.Conn) {
-		// echo
-		fmt.Println("OnOpen:", c.RemoteAddr().String())
-	})
-	u.OnMessage(func(c *websocket.Conn, messageType websocket.MessageType, data []byte) {
-		// echo
-		fmt.Println("OnMessage:", messageType, string(data))
-		c.WriteMessage(messageType, data)
-	})
-	u.OnClose(func(c *websocket.Conn, err error) {
-		fmt.Println("OnClose:", c.RemoteAddr().String(), err)
-	})
-	return u
-}
 
 type PushHeader struct {
 	Encryption    string `header:"Encryption"`
@@ -70,24 +46,6 @@ func EncodePushHeaderKV(_map map[string]string) string {
 		kvArr = append(kvArr, k+"="+v)
 	}
 	return strings.Join(kvArr, ";")
-}
-
-// like autopush
-type PushBody struct {
-	MessageType string `json:"message_type"`
-	ChannelID   string `json:"channel_id"`
-	Version     string `json:"version"`
-	Data        string `json:"data"`
-	Headers     struct {
-		Encryption string `json:"encryption,omitempty"`
-		CryptoKey  string `json:"crypto_key,omitempty"`
-		Encoding   string `json:"encoding,omitempty"`
-	} `json:"headers"`
-}
-
-type PushQueueItem struct {
-	Conn *websocket.Conn
-	Body PushBody
 }
 
 var PushQueue = make(chan PushQueueItem, 1000)
@@ -138,10 +96,17 @@ func ApiV2Push(c echo.Context) error {
 	} else if encoding == "aesgcm" {
 		jwt_ = strings.TrimPrefix(pushHeader.Authorization, "WebPush ")
 	}
-	_, err = jwt.ParseWithClaims(jwt_, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return nil, nil
-	}, jwt.WithIssuedAt(), jwt.WithExpirationRequired())
+
+	_, err = jwt.ParseWithClaims(jwt_, jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if !token.Valid {
+			return nil, errors.New("invalid token")
+		}
+
+		return token, nil
+	})
 	// ttl := pushHeader.TTL
+
+	// log.Println(t, err)
 
 	var rawData string
 	if encoding == "none" {
@@ -154,7 +119,7 @@ func ApiV2Push(c echo.Context) error {
 		MessageType: "notification",
 		ChannelID:   token,
 		Version:     token,
-		Headers: struct {
+		Headers: &struct {
 			Encryption string `json:"encryption,omitempty"`
 			CryptoKey  string `json:"crypto_key,omitempty"`
 			Encoding   string `json:"encoding,omitempty"`
@@ -181,44 +146,4 @@ func ApiV2Push(c echo.Context) error {
 	} else {
 		return c.JSON(http.StatusAccepted, ApiTemplate(200, "No conn", true, "push"))
 	}
-}
-
-type WsConnStruct struct {
-	WsConn     *websocket.Conn
-	Token      string
-	RemoteAddr string
-}
-
-var WsConnCache = ttlcache.New(
-	ttlcache.WithCapacity[string, *WsConnStruct](5000),
-	ttlcache.WithTTL[string, *WsConnStruct](time.Hour*24),
-)
-
-func ApiV2WsPush(c echo.Context) error {
-	token := strings.TrimSpace(c.QueryParams().Get("token"))
-
-	if !regexp.MustCompile(`^[A-Za-z0-9+\-_/]{10,100}$`).MatchString(token) {
-		return c.String(http.StatusUnauthorized, "")
-	}
-
-	if cc := WsConnCache.Get(token); cc != nil {
-		// disconnect
-		cc.Value().WsConn.Close()
-		WsConnCache.Delete(token)
-	}
-
-	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
-	if err != nil {
-		return err
-	}
-
-	connStruct := &WsConnStruct{
-		WsConn:     conn,
-		Token:      token,
-		RemoteAddr: conn.RemoteAddr().String(),
-	}
-
-	WsConnCache.Set(token, connStruct, ttlcache.DefaultTTL)
-
-	return nil //functions.WsRPC.WebsocketServer(ctx, c.Response().Writer, c.Request())
 }

@@ -11,7 +11,7 @@ func UpdateNow() {
 }
 
 func ConcatBuffer(byteData ...[]byte) []byte {
-	tmpBuffer := []byte{}
+	var tmpBuffer []byte
 	for _, buf := range byteData {
 		tmpBuffer = append(tmpBuffer, buf...)
 	}
