@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
@@ -58,8 +59,13 @@ func ApiV2Push(c echo.Context) error {
 	}
 
 	token := c.Param("token")
-	if !regexp.MustCompile(`^[A-Za-z0-9+\-_/]{10,100}$`).MatchString(token) {
+	if !regexp.MustCompile(`^[\w+\-/]{10,100}$`).MatchString(token) {
 		return c.JSON(http.StatusBadRequest, ApiTemplate(400, "Invalid token", false, "push_v2"))
+	}
+
+	channel := c.Param("channel")
+	if channel != "" && !regexp.MustCompile(`^[\w+\-/]{1,100}$`).MatchString(channel) {
+		return c.JSON(http.StatusBadRequest, ApiTemplate(400, "Invalid channel", false, "push_v2"))
 	}
 
 	// parse header
@@ -117,8 +123,8 @@ func ApiV2Push(c echo.Context) error {
 
 	payload := PushBody{
 		MessageType: "notification",
-		ChannelID:   token,
-		Version:     token,
+		ChannelID:   channel,
+		Version:     strconv.Itoa(int(time.Now().UnixMilli())),
 		Headers: &struct {
 			Encryption string `json:"encryption,omitempty"`
 			CryptoKey  string `json:"crypto_key,omitempty"`
@@ -133,9 +139,13 @@ func ApiV2Push(c echo.Context) error {
 
 	// TODO queue
 	if cc := WsConnCache.Get(token); cc != nil {
-		PushQueue <- PushQueueItem{
-			Conn: cc.Value().WsConn,
-			Body: payload,
+		wsConn := cc.Value()
+
+		if len(wsConn.Channel) == 0 || channel != "" && slices.Contains(wsConn.Channel, channel) {
+			PushQueue <- PushQueueItem{
+				Conn: cc.Value().WsConn,
+				Body: payload,
+			}
 		}
 
 		// if err := cc.Value().WsConn.WriteMessage(websocket.TextMessage, jsonPayload); err != nil {

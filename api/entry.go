@@ -24,6 +24,7 @@ func Api() {
 
 	apiv2 := api.Group("/v2")
 	apiv2.GET("/ws/:token", ApiV2WsPush)
+	apiv2.POST("/push/:token/:channel", ApiV2Push)
 	apiv2.POST("/push/:token", ApiV2Push)
 	apiv2.Any("/*", EchoReject)
 

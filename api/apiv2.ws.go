@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -55,8 +56,9 @@ type PushQueueItem struct {
 }
 
 type WsConnStruct struct {
-	WsConn *websocket.Conn
-	Token  string
+	WsConn  *websocket.Conn
+	Token   string
+	Channel []string
 	// RemoteAddr string
 }
 
@@ -104,6 +106,18 @@ func ApiV2WsPush(c echo.Context) error {
 		return c.String(http.StatusUnauthorized, "")
 	}
 
+	channel := strings.Split(c.QueryParam("channel"), ",")
+	newChannel := make([]string, 0)
+
+	for i, ch := range channel {
+		if i >= 20 {
+			break
+		}
+		if ch != "" && regexp.MustCompile(`^[A-Za-z0-9+\-_/]{1,100}$`).MatchString(ch) {
+			newChannel = append(newChannel, ch)
+		}
+	}
+
 	if cc := WsConnCache.Get(token); cc != nil {
 		// disconnect
 		WsConnCache.Delete(token)
@@ -111,12 +125,14 @@ func ApiV2WsPush(c echo.Context) error {
 
 	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
-		return err
+		log.Println(err)
+		return c.String(http.StatusInternalServerError, "")
 	}
 
 	connStruct := &WsConnStruct{
-		WsConn: conn,
-		Token:  token,
+		WsConn:  conn,
+		Token:   token,
+		Channel: newChannel,
 		// RemoteAddr: conn.RemoteAddr().String(),
 	}
 

@@ -258,7 +258,7 @@
                     <hr v-if="i!==0" />
                     <div class="d-flex">
                         <button class="d-flex flex-column justify-content-between btn btn-dark" style="width: 90%"
-                            @click="() => {uuid = contact.id; pushState({ name: main_version >= 2 ? 'v2' : 'main' }, main_version >= 2 ? './#/v2' : '.')}">
+                            @click="() => {uuid = contact.id; wsConn?.close(); pushState({ name: main_version >= 2 ? 'v2' : 'main' }, main_version >= 2 ? './#/v2' : '.')}">
                             <div class="text-truncate bookmark-preview-width">{{ contact.alias }}</div>
                             <div class="text-truncate bookmark-preview-width">{{ contact.id }}</div>
                         </button>
@@ -308,8 +308,12 @@
                         <div class="input-group">
                             <input id="uuid" type="text" class="form-control" v-model="uuid"
                                 aria-describedby="restore-uuid" autocomplete="on" placeholder="UUID" required />
-                            <button v-if="route[0] === 'v2'" class="btn btn-secondary" type="button" id="restore-uuid"
-                                @click="wsConn.close(reconnectWs)">Connect</button>
+
+                            <button v-if="route[0] === 'v2' && wsConn.connected" class="btn btn-danger" type="button"
+                                id="restore-uuid" @click="wsConn?.close()">Disconnect</button>
+                            <button v-else-if="route[0] === 'v2'" class="btn btn-primary" type="button"
+                                id="restore-uuid" @click="wsConn?.close(reconnectWs)">Connect</button>
+
                             <button v-else class="btn btn-secondary" type="button" id="restore-uuid"
                                 @click="restoreUUID">Restore</button>
                         </div>
@@ -318,10 +322,16 @@
                     </div>
 
                     <details class="mb-3">
-                        <summary>Edit jwk</summary>
-                        <div class="input-group mt-2">
+                        <summary>Encrypt</summary>
+                        <label class="form-label mt-2" for="jwk_config">jwk</label>
+                        <div class="input-group mb-2">
                             <textarea rows="5" id="jwk_config" class="form-control" v-model="wsConnJwk"
                                 autocomplete="off" placeholder="jwk object" required></textarea>
+                        </div>
+                        <label class="form-label" for="auth_config">auth</label>
+                        <div class="input-group">
+                            <input type="text" id="auth_config" class="form-control" v-model="wsConn.auth"
+                                autocomplete="off" placeholder="auth" required></textarea>
                         </div>
                     </details>
 
@@ -416,6 +426,7 @@
             intervalHandle = null
 
             key = null
+            auth = ''
 
             constructor(url = '/api/v2/ws', key = null) {
                 if (!url) {
@@ -456,21 +467,13 @@
                                             throw ('No decryption key available')
                                         }
 
-                                        let jwk = this.key
-
-                                        const ke = await importECCKey(jwk)
-                                        const x = base64_to_buffer(base64url_to_base64(jwk.x));
-                                        const y = base64_to_buffer(base64url_to_base64(jwk.y))
-                                        const public_key = concatBuffer(
-                                            new Uint8Array([0x04]),
-                                            x, y
-                                        )
+                                        const { key, public_key } = await this.getKeys()
 
                                         const decryptedData = await decryptMessage({
                                             data: parsedData,
-                                            key: ke,
+                                            key: key,
                                             public_key,
-                                            auth: 'BTkGrIgIAKdpmJ5TBWJn9A'
+                                            auth: this.auth
                                         })
 
                                         postMessage = {
@@ -528,10 +531,23 @@
             }
             close(callback = null) {
                 this.forceClose = true
-                this?._conn.close()
+                this?._conn?.close()
                 if (callback) {
-                    setTimeout(callback, 2000)
+                    setTimeout(callback, 1500)
                 }
+            }
+            async getKeys() {
+                let jwk = this.key
+
+                const key = await importECCKey(jwk)
+                const x = base64_to_buffer(base64url_to_base64(jwk.x));
+                const y = base64_to_buffer(base64url_to_base64(jwk.y))
+                const public_key = concatBuffer(
+                    new Uint8Array([0x04]),
+                    x, y
+                )
+
+                return { key, public_key }
             }
         }
 
@@ -668,7 +684,7 @@
                             break
                         case 'about':
                             this.message = {
-                                content: `### What is TinyPush\n\n> TinyPush is a small tool for pushing content via WebPush 🚀\n\n- Click the markdown icon in the bottom right corner to display the original text.\n\n- A ✅ displayed in the top right corner indicates that the signature verification has been passed. Click the symbol to copy the signature.\n\n- Click **Send Message** on the homepage to view the content. After entering the content in the message, click **PUSH!** to push the message.\n\n- Please keep the UUID safe; anyone with the UUID can push messages to this device. If the UUID is leaked, please reapply for a subscription after unsubscribing on the homepage.\n\n- Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~. Nested syntax is not yet supported. [Full example](#/markdown)\n\n- It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **Subscribe** button directly, which will not cause the \`UUID\` to be modified.\n---\nOur source code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push).\n`,
+                                content: `### What is TinyPush\n\n> TinyPush is a tool for pushing content via WebPush 🚀\n\n- Click the markdown icon in the bottom right corner to display the original text.\n\n- A ✅ displayed in the top right corner indicates that the signature verification has been passed. Click the symbol to copy the signature.\n\n- Click **Send Message** on the homepage to view the content. After entering the content in the message, click **PUSH!** to push the message.\n\n- Please keep the UUID safe; anyone with the UUID can push messages to this device. If the UUID is leaked, please reapply for a subscription after unsubscribing on the homepage.\n\n- Supported markdown syntax: [🔔TinyPush](https://push.nest.moe), <https://push.nest.moe>, \`const inline_code_is_ok = true\`, ***Bold & Italic***, **Bold**, *Italic*, ~~Strikethrough~~. Nested syntax is not yet supported. [Full example](#/markdown)\n\n- It is expected that there is no push permission after viewing the notification on the iOS device. Just click the **Subscribe** button directly, which will not cause the \`UUID\` to be modified.\n---\nOur source code repository is [github:BANKA2017/tiny-push](https://github.com/BANKA2017/tiny-push).\n`,
                                 sign: 'build-in:about',
                                 verify: true
                             }
@@ -682,11 +698,14 @@
                             break
                         case 'help_v2':
                             this.message = {
-                                content: 'step by step...\n- Create a `token` matches `^[A-Za-z0-9+\\-_/]{10,100}$` <https://regex101.com/r/H0a6ec/1>\n' +
-                                    '- Connect to `wss://push.nest.moe/api/v2/ws/${token}`\n' +
+                                content: 'step by step...\n- Create a `token` matches `^[\\w+\\-/]{10,100}$`\n' +
+                                    '- Create `channel` matches `^[\\w+\\-/]{1,100}$`\n' +
+                                    '- Connect to `wss://push.nest.moe/api/v2/ws/${token}[?channel=channel1[,channel2[,...]]]`\n' +
                                     ' - Send a heartbeat message containing arbitrary text **every minute** to prevent disconnection.\n' +
-                                    '- Post [webpush requestes](https://web.dev/articles/push-notifications-web-push-protocol) to `https://push.nest.moe/api/v2/push/${token}`\n' +
-                                    ' - Or plaintext: `curl "https://push.nest.moe/api/v2/push/$token" -H "Content-Encoding:none" -d "plaintext content"`\n' +
+                                    ' - Receive **filtered messages** when the channel is not empty; receive **all messages** when the channel is empty.\n' +
+                                    '- Post [webpush requestes](https://web.dev/articles/push-notifications-web-push-protocol) to `https://push.nest.moe/api/v2/push/${token}[/${channel}]`\n' +
+                                    ' - Or plaintext: `curl "https://push.nest.moe/api/v2/push/$token/${channel}" -H "Content-Encoding:none" -d "plaintext content"`\n' +
+                                    ' - Or no channel: `curl "https://push.nest.moe/api/v2/push/$token" -H "Content-Encoding:none" -d "plaintext content"`\n' +
                                     '\n' +
                                     'For testing only. TTL not supported. Retransmission/ACK not supported. Delivery not guaranteed. No SLA. No verification of the sender. Websocket connection can last up to 24 hours.',
                                 sign: 'build-in:helpv2',
@@ -722,7 +741,9 @@
                         case 'v2':
                             this.main_version = 2
                             this.message = { content: '', sign: '', verify: false, timestamp: 0 }
-                            this.reconnectWs()
+                            if (this.main_version !== 2) {
+                                this.reconnectWs()
+                            }
                             break
                         case 'main':
                             this.main_version = 1
