@@ -63,7 +63,7 @@ func ApiPush(c echo.Context) error {
 	}
 
 	parsedURL, _ := url.ParseRequestURI(endpoint)
-	aud := parsedURL.Scheme + "://" + parsedURL.Host
+	aud := "https://" + parsedURL.Host
 	jwt, _ := functions.BuildJWT(share.ECCPrivateKey, aud, share.Vapid.Sub)
 
 	decodedP256dh, _ := base64.RawURLEncoding.DecodeString(p256dh)
@@ -102,7 +102,7 @@ func ApiPush(c echo.Context) error {
 		"content":   message,
 		"sign":      sign,
 		"timestamp": now.UnixMilli(),
-		//"encrypt":   isEncrypt,
+		//"encrypt": isEncrypt,
 	}
 	payloadJSON, _ := functions.JsonEncode(payloadObject)
 	payload := functions.Encrypt(nonce, cek, payloadJSON, encoding)

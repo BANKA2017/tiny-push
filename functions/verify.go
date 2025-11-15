@@ -4,11 +4,34 @@ import (
 	"crypto/ecdh"
 	"encoding/base64"
 	"net/url"
+	"slices"
+	"strings"
 )
 
+var PushEndpointHostList = []string{
+	// https://github.com/pushpad/known-push-services/blob/master/whitelist
+	"android.googleapis.com",
+	"fcm.googleapis.com",
+	"updates.push.services.mozilla.com",
+	"updates-autopush.stage.mozaws.net",
+	"updates-autopush.dev.mozaws.net",
+
+	// self-service
+	"push.nest.moe",
+}
+
 func VerifyURL(_url string) bool {
-	_, err := url.ParseRequestURI(_url)
-	return err == nil
+	parsedURL, err := url.ParseRequestURI(_url)
+
+	if err != nil {
+		return false
+	} else if parsedURL.Scheme != "https" {
+		return false
+	} else if !slices.Contains(PushEndpointHostList, parsedURL.Host) && !strings.HasSuffix(parsedURL.Host, ".notify.windows.com") && !strings.HasSuffix(parsedURL.Path, ".push.apple.com") {
+		return false
+	}
+
+	return true
 }
 
 func VerifyP256dh(_p256dh string) bool {

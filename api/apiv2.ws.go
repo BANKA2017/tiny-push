@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -77,8 +78,8 @@ func init() {
 
 		body := PushBody{
 			MessageType: "close",
-			ChannelID:   wsconn.Token,
-			Version:     wsconn.Token,
+			ChannelID:   "",
+			Version:     strconv.Itoa(int(time.Now().UnixMilli())),
 		}
 
 		if i.IsExpired() {
