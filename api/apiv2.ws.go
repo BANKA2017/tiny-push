@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand/v2"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -22,7 +23,7 @@ var (
 
 func newUpgrader() *websocket.Upgrader {
 	u := websocket.NewUpgrader()
-	u.KeepaliveTime = time.Hour * 24
+	u.KeepaliveTime = time.Hour*24 + time.Second*time.Duration(rand.Float64()*60.0)
 	u.OnOpen(func(c *websocket.Conn) {
 		// echo
 		fmt.Println("OnOpen:", c.RemoteAddr().String())
@@ -63,8 +64,10 @@ type WsConnStruct struct {
 	// RemoteAddr string
 }
 
+const PushConnSize = 5000
+
 var WsConnCache = ttlcache.New(
-	ttlcache.WithCapacity[string, *WsConnStruct](5000),
+	ttlcache.WithCapacity[string, *WsConnStruct](PushConnSize),
 	ttlcache.WithTTL[string, *WsConnStruct](time.Hour*24),
 )
 
@@ -96,6 +99,41 @@ func init() {
 	})
 }
 
+func CreateWsConn(w http.ResponseWriter, r *http.Request, token string, channel []string) error {
+	if cc := WsConnCache.Get(token); cc != nil {
+		// disconnect
+		WsConnCache.Delete(token)
+	}
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return err
+	}
+
+	connStruct := &WsConnStruct{
+		WsConn:  conn,
+		Token:   token,
+		Channel: channel,
+		// RemoteAddr: conn.RemoteAddr().String(),
+	}
+
+	WsConnCache.Set(token, connStruct, ttlcache.DefaultTTL)
+
+	return nil
+}
+
+func PushBroadcast(message []byte) error {
+	WsConnCache.Range(func(item *ttlcache.Item[string, *WsConnStruct]) bool {
+		err := item.Value().WsConn.WriteMessage(websocket.TextMessage, message)
+		if err != nil {
+			log.Println(err)
+		}
+		return true
+	})
+
+	return nil
+}
+
 func ApiV2WsPush(c echo.Context) error {
 	token := c.Param("token")
 
@@ -119,25 +157,10 @@ func ApiV2WsPush(c echo.Context) error {
 		}
 	}
 
-	if cc := WsConnCache.Get(token); cc != nil {
-		// disconnect
-		WsConnCache.Delete(token)
-	}
-
-	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
-	if err != nil {
+	if err := CreateWsConn(c.Response().Writer, c.Request(), token, newChannel); err != nil {
 		log.Println(err)
 		return c.String(http.StatusInternalServerError, "")
 	}
-
-	connStruct := &WsConnStruct{
-		WsConn:  conn,
-		Token:   token,
-		Channel: newChannel,
-		// RemoteAddr: conn.RemoteAddr().String(),
-	}
-
-	WsConnCache.Set(token, connStruct, ttlcache.DefaultTTL)
 
 	return nil //functions.WsRPC.WebsocketServer(ctx, c.Response().Writer, c.Request())
 }
