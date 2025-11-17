@@ -23,7 +23,7 @@ var (
 
 func newUpgrader() *websocket.Upgrader {
 	u := websocket.NewUpgrader()
-	u.KeepaliveTime = time.Hour*24 + time.Second*time.Duration(rand.Float64()*60.0)
+	u.KeepaliveTime = time.Hour * 24
 	u.OnOpen(func(c *websocket.Conn) {
 		// echo
 		fmt.Println("OnOpen:", c.RemoteAddr().String())
@@ -117,7 +117,7 @@ func CreateWsConn(w http.ResponseWriter, r *http.Request, token string, channel 
 		// RemoteAddr: conn.RemoteAddr().String(),
 	}
 
-	WsConnCache.Set(token, connStruct, ttlcache.DefaultTTL)
+	WsConnCache.Set(token, connStruct, time.Hour*24+time.Second*time.Duration(rand.Float64()*60.0))
 
 	return nil
 }
