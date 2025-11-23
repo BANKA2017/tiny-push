@@ -24,6 +24,9 @@ var (
 func newUpgrader() *websocket.Upgrader {
 	u := websocket.NewUpgrader()
 	u.KeepaliveTime = time.Hour * 24
+	u.CheckOrigin = func(r *http.Request) bool {
+		return true
+	}
 	u.OnOpen(func(c *websocket.Conn) {
 		// echo
 		fmt.Println("OnOpen:", c.RemoteAddr().String())
