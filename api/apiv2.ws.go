@@ -31,11 +31,11 @@ func newUpgrader() *websocket.Upgrader {
 		// echo
 		fmt.Println("OnOpen:", c.RemoteAddr().String())
 	})
-	u.OnMessage(func(c *websocket.Conn, messageType websocket.MessageType, data []byte) {
-		// echo
-		fmt.Println("OnMessage:", messageType, string(data))
-		c.WriteMessage(messageType, data)
-	})
+	// u.OnMessage(func(c *websocket.Conn, messageType websocket.MessageType, data []byte) {
+	// 	// echo
+	// 	fmt.Println("OnMessage:", messageType, string(data))
+	// 	c.WriteMessage(messageType, data)
+	// })
 	u.OnClose(func(c *websocket.Conn, err error) {
 		fmt.Println("OnClose:", c.RemoteAddr().String(), err)
 	})
