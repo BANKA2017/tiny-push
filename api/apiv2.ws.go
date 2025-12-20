@@ -3,43 +3,54 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
-	"math/rand/v2"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/jellydator/ttlcache/v3"
+	mtcws "github.com/kdnetwork/message-transfer-core/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/lesismal/nbio/nbhttp/websocket"
 )
 
-var (
-	upgrader = newUpgrader()
-)
+var WsCore mtcws.WsCoreCtx
 
-func newUpgrader() *websocket.Upgrader {
-	u := websocket.NewUpgrader()
-	u.KeepaliveTime = time.Hour * 24
-	u.CheckOrigin = func(r *http.Request) bool {
-		return true
+func InitWsCore() {
+	WsCore = mtcws.WsCoreCtx{
+		TTL:      time.Hour * 24,
+		ConnSize: 5000,
 	}
-	u.OnOpen(func(c *websocket.Conn) {
-		// echo
-		fmt.Println("OnOpen:", c.RemoteAddr().String())
-	})
-	// u.OnMessage(func(c *websocket.Conn, messageType websocket.MessageType, data []byte) {
-	// 	// echo
-	// 	fmt.Println("OnMessage:", messageType, string(data))
-	// 	c.WriteMessage(messageType, data)
-	// })
-	u.OnClose(func(c *websocket.Conn, err error) {
-		fmt.Println("OnClose:", c.RemoteAddr().String(), err)
-	})
-	return u
+
+	WsCore.Init()
+	WsCore.InitUpgrader()
+
+	WsCore.OnConnected = func(w *mtcws.WsConnContext) error {
+		fmt.Println("OnOpen:", w.Conn.RemoteAddr().String())
+		return nil
+	}
+
+	WsCore.OnDisConnected = func(w *mtcws.WsConnContext) error {
+		fmt.Println("OnClose:", w.Conn.RemoteAddr().String())
+
+		if w.Conn == nil {
+			return errors.New("no conn")
+		}
+
+		body := PushBody{
+			MessageType: "close",
+			ChannelID:   "",
+			Version:     strconv.Itoa(int(time.Now().UnixMilli())),
+			Data:        w.Store["disconnect_reason"],
+		}
+
+		binBody, _ := json.Marshal(body)
+
+		return w.Conn.WriteMessage(websocket.TextMessage, binBody)
+	}
 }
 
 // like autopush
@@ -67,72 +78,8 @@ type WsConnStruct struct {
 	// RemoteAddr string
 }
 
-const PushConnSize = 5000
-
-var WsConnCache = ttlcache.New(
-	ttlcache.WithCapacity[string, *WsConnStruct](PushConnSize),
-	ttlcache.WithTTL[string, *WsConnStruct](time.Hour*24),
-)
-
-func init() {
-	WsConnCache.OnEviction(func(ctx context.Context, reason ttlcache.EvictionReason, i *ttlcache.Item[string, *WsConnStruct]) {
-		wsconn := i.Value()
-
-		if wsconn.WsConn == nil {
-			return
-		}
-
-		body := PushBody{
-			MessageType: "close",
-			ChannelID:   "",
-			Version:     strconv.Itoa(int(time.Now().UnixMilli())),
-		}
-
-		if i.IsExpired() {
-			body.Data = "expired"
-		} else {
-			body.Data = "kick"
-		}
-
-		binBody, _ := json.Marshal(body)
-
-		wsconn.WsConn.WriteMessage(websocket.TextMessage, binBody)
-
-		wsconn.WsConn.Close()
-	})
-}
-
-func CreateWsConn(w http.ResponseWriter, r *http.Request, token string, channel []string) error {
-	if cc := WsConnCache.Get(token); cc != nil {
-		// disconnect
-		WsConnCache.Delete(token)
-	}
-
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return err
-	}
-
-	connStruct := &WsConnStruct{
-		WsConn:  conn,
-		Token:   token,
-		Channel: channel,
-		// RemoteAddr: conn.RemoteAddr().String(),
-	}
-
-	WsConnCache.Set(token, connStruct, time.Hour*24+time.Second*time.Duration(rand.Float64()*60.0))
-
-	return nil
-}
-
 func PushBroadcast(message []byte) error {
-	WsConnCache.Range(func(item *ttlcache.Item[string, *WsConnStruct]) bool {
-		err := item.Value().WsConn.WriteMessage(websocket.TextMessage, message)
-		if err != nil {
-			log.Println(err)
-		}
-		return true
-	})
+	WsCore.BroadcastToWebSocket(message, "")
 
 	return nil
 }
@@ -160,7 +107,14 @@ func ApiV2WsPush(c echo.Context) error {
 		}
 	}
 
-	if err := CreateWsConn(c.Response().Writer, c.Request(), token, newChannel); err != nil {
+	ctx := context.WithValue(context.Background(), "mtc-store", map[string]string{
+		"node_id":   token,
+		"conn_type": "push_v2",
+
+		"push_channel": strings.Join(newChannel, ","),
+	})
+
+	if err := WsCore.WebsocketServer(ctx, c.Response().Writer, c.Request()); err != nil {
 		log.Println(err)
 		return c.String(http.StatusInternalServerError, "")
 	}

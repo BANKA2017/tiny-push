@@ -138,22 +138,27 @@ func ApiV2Push(c echo.Context) error {
 	}
 
 	// TODO queue
-	if cc := WsConnCache.Get(token); cc != nil {
+	if cc := WsCore.WebsocketConnPool.Get("push_v2:" + token); cc != nil {
 		wsConn := cc.Value()
+		if wsConn.Conn != nil && wsConn.Ctx.Err() == nil {
+			wsChannel, ok := wsConn.Store["push_channel"]
 
-		if len(wsConn.Channel) == 0 || channel != "" && slices.Contains(wsConn.Channel, channel) {
-			PushQueue <- PushQueueItem{
-				Conn: cc.Value().WsConn,
-				Body: payload,
+			if (!ok || wsChannel == "") || slices.Contains(strings.Split(wsChannel, ","), channel) {
+				PushQueue <- PushQueueItem{
+					Conn: wsConn.Conn,
+					Body: payload,
+				}
 			}
+		} else {
+			return c.JSON(http.StatusCreated, ApiTemplate(404, "Conn lost", false, "push_v2"))
 		}
 
 		// if err := cc.Value().WsConn.WriteMessage(websocket.TextMessage, jsonPayload); err != nil {
 		// 	return c.JSON(http.StatusInternalServerError, ApiTemplate(500, "Failed", payload, "push"))
 		// } else {
-		return c.JSON(http.StatusCreated, ApiTemplate(201, "OK", true, "push"))
+		return c.JSON(http.StatusCreated, ApiTemplate(201, "OK", true, "push_v2"))
 		// }
 	} else {
-		return c.JSON(http.StatusAccepted, ApiTemplate(200, "No conn", true, "push"))
+		return c.JSON(http.StatusAccepted, ApiTemplate(200, "No conn", true, "push_v2"))
 	}
 }

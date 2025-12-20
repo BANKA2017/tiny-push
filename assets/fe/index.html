@@ -258,7 +258,7 @@
                     <hr v-if="i!==0" />
                     <div class="d-flex">
                         <button class="d-flex flex-column justify-content-between btn btn-dark" style="width: 90%"
-                            @click="() => {uuid = contact.id; wsConn?.close(); pushState({ name: main_version >= 2 ? 'v2' : 'main' }, main_version >= 2 ? './#/v2' : '.')}">
+                            @click="() => {wsConn?.close(); pushState({ name: main_version >= 2 ? 'v2' : 'main' }, main_version >= 2 ? './#/v2/' + contact.id : '.')}">
                             <div class="text-truncate bookmark-preview-width">{{ contact.alias }}</div>
                             <div class="text-truncate bookmark-preview-width">{{ contact.id }}</div>
                         </button>
@@ -741,6 +741,9 @@
                         case 'v2':
                             this.main_version = 2
                             this.message = { content: '', sign: '', verify: false, timestamp: 0 }
+                            if (newVal.length > 1) {
+                                this.uuid = newVal[1]
+                            }
                             if (this.main_version !== 2) {
                                 this.reconnectWs()
                             }

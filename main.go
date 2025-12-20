@@ -55,8 +55,8 @@ func main() {
 	defer deleteExpiredGlobalJWT.Stop()
 
 	// ws conn
-	go api.WsConnCache.Start()
-	defer api.WsConnCache.Stop()
+	api.InitWsCore()
+	defer api.WsCore.Stop()
 
 	go func() {
 		for {
@@ -66,7 +66,7 @@ func main() {
 			case <-oneMinuteTicker.C:
 				// TODO ??
 				functions.GormDB.W.Where("last_used <= ?", functions.Now.Add(time.Hour*24*30*3*-1).UnixMilli())
-				api.WsConnCache.DeleteExpired()
+				api.WsCore.WebsocketConnPool.DeleteExpired()
 			case q := <-api.PushQueue:
 				jsonPayload, _ := json.Marshal(q.Body)
 				if err = q.Conn.WriteMessage(websocket.TextMessage, jsonPayload); err != nil {
