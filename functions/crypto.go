@@ -67,7 +67,7 @@ type GlobalJWTContent struct {
 
 // BuildJWT builds a JWT token using the provided VAPID object and audience.
 func BuildJWT(privateKey *ecdsa.PrivateKey, aud string, sub string) (string, error) {
-	now := Now
+	now := time.Now()
 	if jwt_ := GlobalJWT.Get(aud); jwt_ != nil {
 		j := jwt_.Value()
 		if j.Content != "" && j.Expire > now.UnixMilli() {

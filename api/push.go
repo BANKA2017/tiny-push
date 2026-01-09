@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/BANKA2017/tiny-push/functions"
 	"github.com/BANKA2017/tiny-push/share"
@@ -19,7 +20,7 @@ import (
 )
 
 func ApiPush(c echo.Context) error {
-	now := functions.Now
+	now := time.Now()
 
 	_uuid := c.Param("uuid")
 

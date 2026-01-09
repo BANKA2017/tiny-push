@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/BANKA2017/tiny-push/functions"
 	"github.com/BANKA2017/tiny-push/model"
@@ -45,7 +46,7 @@ func ApiSubscribe(c echo.Context) error {
 		Endpoint: endpoint,
 		Auth:     auth,
 		P256dh:   p256dh,
-		LastUsed: int32(functions.Now.UnixMilli()),
+		LastUsed: int32(time.Now().UnixMilli()),
 	})
 
 	if err != nil {

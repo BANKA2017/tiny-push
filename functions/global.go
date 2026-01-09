@@ -1,15 +1,5 @@
 package functions
 
-import (
-	"time"
-)
-
-var Now = time.Now()
-
-func UpdateNow() {
-	Now = time.Now()
-}
-
 func ConcatBuffer(byteData ...[]byte) []byte {
 	var tmpBuffer []byte
 	for _, buf := range byteData {

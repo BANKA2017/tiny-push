@@ -33,8 +33,7 @@ func Setup() error {
 	GormDB.W.Migrator().DropTable(&model.Channel{}, &model.Setting{})
 
 	fmt.Println("⌛Create tables")
-	GormDB.W.Migrator().CreateTable(&model.Channel{})
-	GormDB.W.Migrator().CreateTable(&model.Setting{})
+	GormDB.W.Migrator().CreateTable(&model.Channel{}, &model.Setting{})
 
 	fmt.Println("⌛Insert settings")
 	GormDB.W.Create(&[]model.Setting{

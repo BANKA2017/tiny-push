@@ -31,26 +31,25 @@ func main() {
 	if share.TestMode {
 		logLevel = logger.Info
 	}
-	functions.GormDB.R, functions.GormDB.W, err = functions.ConnectToSQLite(share.DBPath, logLevel, "tiny-push")
 
-	if err != nil {
+	functions.GormDB.ServicePrefix = "tiny-push"
+	functions.GormDB.LogLevel = logLevel
+	functions.GormDB.WALMode = true
+
+	if err = functions.GormDB.ConnectToSQLite(share.DBPath); err != nil {
 		log.Fatal(err)
 	}
 
 	// init vapid data
-	err = functions.InitSettings()
-	if err != nil {
+	if err = functions.InitSettings(); err != nil {
 		functions.Setup()
-		err = functions.InitSettings()
-		if err != nil {
+		if err = functions.InitSettings(); err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	updateTimeTicker := time.NewTicker(time.Millisecond * 200)
 	oneMinuteTicker := time.NewTicker(time.Minute)
 	deleteExpiredGlobalJWT := time.NewTicker(time.Minute)
-	defer updateTimeTicker.Stop()
 	defer oneMinuteTicker.Stop()
 	defer deleteExpiredGlobalJWT.Stop()
 
@@ -61,11 +60,9 @@ func main() {
 	go func() {
 		for {
 			select {
-			case <-updateTimeTicker.C:
-				functions.UpdateNow()
 			case <-oneMinuteTicker.C:
 				// TODO ??
-				functions.GormDB.W.Where("last_used <= ?", functions.Now.Add(time.Hour*24*30*3*-1).UnixMilli())
+				functions.GormDB.W.Where("last_used <= ?", time.Now().Add(time.Hour*24*30*3*-1).UnixMilli())
 				api.WsCore.WebsocketConnPool.DeleteExpired()
 			case q := <-api.PushQueue:
 				jsonPayload, _ := json.Marshal(q.Body)
