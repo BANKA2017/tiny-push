@@ -21,8 +21,9 @@ var WsCore mtcws.WsCoreCtx
 
 func InitWsCore() {
 	WsCore = mtcws.WsCoreCtx{
-		TTL:      time.Hour * 24,
-		ConnSize: 5000,
+		TTL:            time.Hour * 24,
+		ConnSize:       5000,
+		ConnectTimeout: time.Second * 10,
 	}
 
 	WsCore.Init()
