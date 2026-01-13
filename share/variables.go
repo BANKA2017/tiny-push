@@ -12,3 +12,7 @@ var Vapid = struct {
 }{}
 
 var ECCPrivateKey *ecdsa.PrivateKey
+
+var V2DefaultTTL = 60 * 60 * 24
+var V2MaximumTTL = 60 * 60 * 24
+var V2CacheSize = 10

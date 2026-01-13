@@ -46,7 +46,7 @@ func ApiSubscribe(c echo.Context) error {
 		Endpoint: endpoint,
 		Auth:     auth,
 		P256dh:   p256dh,
-		LastUsed: int32(time.Now().UnixMilli()),
+		LastUsed: time.Now().UnixMilli(),
 	})
 
 	if err != nil {

@@ -50,7 +50,7 @@ func ApiPush(c echo.Context) error {
 		auth = uuidData.Auth
 		endpoint = uuidData.Endpoint
 
-		uuidData.LastUsed = int32(now.UnixMilli())
+		uuidData.LastUsed = now.UnixMilli()
 		uuidData.Count += 1
 		err = functions.UpdateUUID(uuidData)
 		if err != nil {

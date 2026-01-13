@@ -12,6 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BANKA2017/tiny-push/functions"
+	"github.com/BANKA2017/tiny-push/model"
+	"github.com/BANKA2017/tiny-push/share"
 	mtcws "github.com/kdnetwork/message-transfer-core/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/lesismal/nbio/nbhttp/websocket"
@@ -31,6 +34,29 @@ func InitWsCore() {
 
 	WsCore.OnConnected = func(w *mtcws.WsConnContext) error {
 		fmt.Println("OnOpen:", w.Conn.RemoteAddr().String())
+
+		// load messages from db
+		now := time.Now().Unix()
+
+		var messages = []*model.V2MessageCache{}
+		if err := functions.GormDB.R.Model(&model.V2MessageCache{}).Where("uaid = ?", w.ID).Order("mid DESC").Limit(share.V2CacheSize).Find(&messages).Error; err != nil {
+			return err
+		}
+
+		for _, message := range messages {
+			if message.ExpiredAt > now {
+				if err := w.SendWebsocketMessage([]byte(message.Message)); err != nil {
+					log.Println(err)
+				} else {
+					if err := functions.GormDB.R.Model(&model.V2MessageCache{}).Where("mid = ?", message.Mid).Delete(&model.V2MessageCache{}).Error; err != nil {
+						log.Println(err)
+					}
+				}
+			}
+		}
+
+		//TODO ack
+
 		return nil
 	}
 
@@ -68,8 +94,8 @@ type PushBody struct {
 }
 
 type PushQueueItem struct {
-	Conn *websocket.Conn
-	Body PushBody
+	Conn *mtcws.WsConnContext
+	Body *PushBody
 }
 
 type WsConnStruct struct {

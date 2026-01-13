@@ -8,8 +8,8 @@ const TableNameSetting = "settings"
 
 // Setting mapped from table <settings>
 type Setting struct {
-	Key   string `gorm:"column:key;primaryKey" json:"key"`
-	Value string `gorm:"column:value;not null" json:"value"`
+	Key   string `gorm:"column:key;type:text;primaryKey" json:"key"`
+	Value string `gorm:"column:value;type:text;not null" json:"value"`
 }
 
 // TableName Setting's table name

@@ -9,8 +9,8 @@ import (
 
 	"github.com/BANKA2017/tiny-push/api"
 	"github.com/BANKA2017/tiny-push/functions"
+	"github.com/BANKA2017/tiny-push/model"
 	"github.com/BANKA2017/tiny-push/share"
-	"github.com/lesismal/nbio/nbhttp/websocket"
 	"gorm.io/gorm/logger"
 )
 
@@ -62,11 +62,12 @@ func main() {
 			select {
 			case <-oneMinuteTicker.C:
 				// TODO ??
-				functions.GormDB.W.Where("last_used <= ?", time.Now().Add(time.Hour*24*30*3*-1).UnixMilli())
+				functions.GormDB.W.Where("last_used <= ?", time.Now().Add(time.Hour*24*30*3*-1).UnixMilli()).Delete(&model.Channel{})
+				functions.GormDB.W.Where("expired_at <= ?", time.Now().Unix()).Delete(&model.V2MessageCache{})
 				api.WsCore.WebsocketConnPool.DeleteExpired()
 			case q := <-api.PushQueue:
 				jsonPayload, _ := json.Marshal(q.Body)
-				if err = q.Conn.WriteMessage(websocket.TextMessage, jsonPayload); err != nil {
+				if err = q.Conn.SendWebsocketMessage(jsonPayload); err != nil {
 					log.Println(err)
 				}
 			}

@@ -7,10 +7,12 @@ import (
 	"github.com/BANKA2017/tiny-push/assets"
 	"github.com/BANKA2017/tiny-push/share"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func Api() {
 	e := echo.New()
+	e.Pre(middleware.RemoveTrailingSlash())
 	//e.Use(middleware.Logger())
 	e.Use(SetHeaders)
 
@@ -26,12 +28,11 @@ func Api() {
 	apiv2.GET("/ws/:token", ApiV2WsPush)
 	apiv2.POST("/push/:token/:channel", ApiV2Push)
 	apiv2.POST("/push/:token", ApiV2Push)
-	apiv2.Any("/*", EchoReject)
 
 	if share.TestMode {
 		e.Static("/*", "assets/fe")
 	} else {
-		fe, _ := fs.Sub(assets.EmbeddedFrontent, "fe")
+		fe, _ := fs.Sub(assets.EmbeddedFrontend, "fe")
 		e.GET("/*", echo.WrapHandler(http.FileServer(http.FS(fe))))
 	}
 

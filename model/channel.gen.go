@@ -8,13 +8,13 @@ const TableNameChannel = "channel"
 
 // Channel mapped from table <channel>
 type Channel struct {
-	UUID     string `gorm:"column:uuid;primaryKey;uniqueIndex:idx_channel_uuid,priority:1" json:"uuid"`
-	Endpoint string `gorm:"column:endpoint;not null" json:"endpoint"`
-	Auth     string `gorm:"column:auth;not null" json:"auth"`
-	P256dh   string `gorm:"column:p256dh;not null" json:"p256dh"`
-	Target   string `gorm:"column:target;not null;default:'webpush'" json:"target"`
-	LastUsed int32  `gorm:"column:last_used;not null;index:idx_channel_latest_used,priority:1" json:"last_used"`
-	Count    int32  `gorm:"column:count;not null" json:"count"`
+	UUID     string `gorm:"column:uuid;type:text;primaryKey;uniqueIndex:idx_channel_uuid,priority:1" json:"uuid"`
+	Endpoint string `gorm:"column:endpoint;type:text;not null" json:"endpoint"`
+	Auth     string `gorm:"column:auth;type:text;not null" json:"auth"`
+	P256dh   string `gorm:"column:p256dh;type:text;not null" json:"p256dh"`
+	Target   string `gorm:"column:target;type:text;not null;default:webpush" json:"target"`
+	LastUsed int64  `gorm:"column:last_used;type:integer;not null;index:idx_channel_latest_used,priority:1" json:"last_used"`
+	Count    int64  `gorm:"column:count;type:integer;not null" json:"count"`
 }
 
 // TableName Channel's table name

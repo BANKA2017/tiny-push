@@ -707,7 +707,7 @@
                                     ' - Or plaintext: `curl "https://push.nest.moe/api/v2/push/$token/${channel}" -H "Content-Encoding:none" -d "plaintext content"`\n' +
                                     ' - Or no channel: `curl "https://push.nest.moe/api/v2/push/$token" -H "Content-Encoding:none" -d "plaintext content"`\n' +
                                     '\n' +
-                                    'For testing only. TTL not supported. Retransmission/ACK not supported. Delivery not guaranteed. No SLA. No verification of the sender. Websocket connection can last up to 24 hours.',
+                                    'For testing only. TTL -> 0~86400s, cache x 10. Retransmission/ACK not supported. Delivery not guaranteed. No SLA. No verification of the sender. Websocket connection can last up to 24 hours.',
                                 sign: 'build-in:helpv2',
                                 verify: true
                             }

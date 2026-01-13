@@ -12,6 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BANKA2017/tiny-push/functions"
+	"github.com/BANKA2017/tiny-push/model"
+	"github.com/BANKA2017/tiny-push/share"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
@@ -20,9 +23,9 @@ type PushHeader struct {
 	Encryption    string `header:"Encryption"`
 	CryptoKey     string `header:"Crypto-Key"`
 	Encoding      string `header:"Content-Encoding"`
-	TTL           string `header:"TTL"` // TODO no used now...
+	TTL           int    `header:"TTL"` // seconds
 	Authorization string `header:"Authorization"`
-	ContentLength string `header:"Content-Length"`
+	ContentLength int    `header:"Content-Length"`
 }
 
 func ParsePushHeaderKV(text string) map[string]string {
@@ -75,7 +78,7 @@ func ApiV2Push(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, ApiTemplate(400, "Invalid request", false, "push_v2"))
 	}
-	if strconv.Itoa(int(len(body))) != pushHeader.ContentLength || len(body) > 4096 {
+	if len(body) != pushHeader.ContentLength || len(body) > 4096 {
 		return c.JSON(http.StatusRequestEntityTooLarge, ApiTemplate(413, "Invalid content length", false, "push_v2"))
 	}
 
@@ -110,7 +113,10 @@ func ApiV2Push(c echo.Context) error {
 
 		return token, nil
 	})
-	// ttl := pushHeader.TTL
+
+	// set ttl
+	// one day
+	ttl := min(max(0, pushHeader.TTL), share.V2MaximumTTL)
 
 	// log.Println(t, err)
 
@@ -121,7 +127,7 @@ func ApiV2Push(c echo.Context) error {
 		rawData = base64.RawURLEncoding.EncodeToString(body)
 	}
 
-	payload := PushBody{
+	payload := &PushBody{
 		MessageType: "notification",
 		ChannelID:   channel,
 		Version:     strconv.Itoa(int(time.Now().UnixMilli())),
@@ -145,10 +151,12 @@ func ApiV2Push(c echo.Context) error {
 
 			if (!ok || wsChannel == "") || slices.Contains(strings.Split(wsChannel, ","), channel) {
 				PushQueue <- PushQueueItem{
-					Conn: wsConn.Conn,
+					Conn: wsConn,
 					Body: payload,
 				}
 			}
+		} else if ttl > 0 {
+			return CacheMessage(c, payload, int64(ttl), token)
 		} else {
 			return c.JSON(http.StatusCreated, ApiTemplate(404, "Conn lost", false, "push_v2"))
 		}
@@ -158,7 +166,27 @@ func ApiV2Push(c echo.Context) error {
 		// } else {
 		return c.JSON(http.StatusCreated, ApiTemplate(201, "OK", true, "push_v2"))
 		// }
-	} else {
-		return c.JSON(http.StatusAccepted, ApiTemplate(200, "No conn", true, "push_v2"))
+	} else if ttl > 0 {
+		return CacheMessage(c, payload, int64(ttl), token)
 	}
+
+	return c.JSON(http.StatusAccepted, ApiTemplate(200, "No conn", true, "push_v2"))
+}
+
+func CacheMessage(c echo.Context, payload *PushBody, ttl int64, token string) error {
+	message, err := functions.JsonEncode(payload)
+	if err != nil {
+		log.Println(err)
+		return c.JSON(http.StatusAccepted, ApiTemplate(500, "Encode message failed", true, "push_v2"))
+	}
+	if err := functions.GormDB.W.Create(&model.V2MessageCache{
+		Uaid:      token,
+		Message:   string(message),
+		ExpiredAt: time.Now().Unix() + int64(ttl),
+	}).Error; err != nil {
+		log.Println(err)
+		return c.JSON(http.StatusAccepted, ApiTemplate(500, "Save message failed", true, "push_v2"))
+	}
+
+	return c.JSON(http.StatusAccepted, ApiTemplate(200, "Cached", true, "push_v2"))
 }
