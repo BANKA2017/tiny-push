@@ -174,6 +174,9 @@ func ApiV2Push(c echo.Context) error {
 }
 
 func CacheMessage(c echo.Context, payload *PushBody, ttl int64, token string) error {
+	if !slices.Contains([]string{"aesgcm", "aes128gcm"}, payload.Headers.Encryption) {
+		return c.JSON(http.StatusAccepted, ApiTemplate(400, "Plaintext message is not allow", false, "push_v2"))
+	}
 	message, err := functions.JsonEncode(payload)
 	if err != nil {
 		log.Println(err)
