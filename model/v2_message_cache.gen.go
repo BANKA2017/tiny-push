@@ -8,8 +8,8 @@ const TableNameV2MessageCache = "v2_message_cache"
 
 // V2MessageCache mapped from table <v2_message_cache>
 type V2MessageCache struct {
-	Mid       int64  `gorm:"column:mid;type:INTEGER;primaryKey" json:"mid"`
-	Uaid      string `gorm:"column:uaid;type:TEXT;not null;index:idx_v2_uaid,priority:1" json:"uaid"`
+	Mid       int64  `gorm:"column:mid;type:INTEGER;primaryKey;index:idx_v2_message_cache_uaid_mid_desc,priority:2" json:"mid"`
+	Uaid      string `gorm:"column:uaid;type:TEXT;not null;index:idx_v2_message_cache_uaid_mid_desc,priority:1" json:"uaid"`
 	Message   string `gorm:"column:message;type:TEXT;not null" json:"message"`
 	ExpiredAt int64  `gorm:"column:expired_at;type:INTEGER;not null;index:idx_v2_expired_at,priority:1" json:"expired_at"`
 }
