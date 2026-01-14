@@ -27,10 +27,14 @@ github.com/kdnetwork/code-snippet/go v0.0.0-20260107074713-03d7247e40c5 h1:3AYxP
 github.com/kdnetwork/code-snippet/go v0.0.0-20260107074713-03d7247e40c5/go.mod h1:fcwO3a9sV29Y7KZYwBh7Zad6pXpdTK2GG0EVE+j56Pg=
 github.com/kdnetwork/code-snippet/go v0.0.0-20260111174509-e2ab3661aaee h1:xzXfWPs7she3MzkDFfuH12k+iY7HN2uenLrPKdhiQhs=
 github.com/kdnetwork/code-snippet/go v0.0.0-20260111174509-e2ab3661aaee/go.mod h1:fcwO3a9sV29Y7KZYwBh7Zad6pXpdTK2GG0EVE+j56Pg=
+github.com/kdnetwork/code-snippet/go v0.0.0-20260114163907-e19bb5d455ce h1:TK4clz/VCAVbMlbTAN5ANO3ce4NnvcD5kK1W2PtUV5U=
+github.com/kdnetwork/code-snippet/go v0.0.0-20260114163907-e19bb5d455ce/go.mod h1:fcwO3a9sV29Y7KZYwBh7Zad6pXpdTK2GG0EVE+j56Pg=
 github.com/kdnetwork/message-transfer-core v0.0.2 h1:LYX9kFc0/nemByNnAXb0tDwo78oTfoUr0BC/1C/O3xo=
 github.com/kdnetwork/message-transfer-core v0.0.2/go.mod h1:Rizwyw72ebYKI0b05ugrjE6PkAaLOGbV/JlKEPhmg7E=
 github.com/kdnetwork/message-transfer-core v0.0.3 h1:zr329geSUcnabsobQDF9ZKxNqqRH5azF/mLfe9fZACs=
 github.com/kdnetwork/message-transfer-core v0.0.3/go.mod h1:PF/FM0OVHc3h6rouBL83dPFsAOxZ1czYOXz34MAH2S4=
+github.com/kdnetwork/message-transfer-core v0.0.4 h1:GnqTj+5LyyPyCbdekRBs4a20aZdN5c+wAnEPrWdgdPk=
+github.com/kdnetwork/message-transfer-core v0.0.4/go.mod h1:PF/FM0OVHc3h6rouBL83dPFsAOxZ1czYOXz34MAH2S4=
 github.com/labstack/echo/v4 v4.15.0 h1:hoRTKWcnR5STXZFe9BmYun9AMTNeSbjHi2vtDuADJ24=
 github.com/labstack/echo/v4 v4.15.0/go.mod h1:xmw1clThob0BSVRX1CRQkGQ/vjwcpOMjQZSZa9fKA/c=
 github.com/labstack/gommon v0.4.2 h1:F8qTUNXgG1+6WQmqoUWnz8WiEU60mXVVw0P4ht1WRA0=

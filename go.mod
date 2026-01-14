@@ -6,8 +6,8 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/jellydator/ttlcache/v3 v3.4.0
-	github.com/kdnetwork/code-snippet/go v0.0.0-20260111174509-e2ab3661aaee
-	github.com/kdnetwork/message-transfer-core v0.0.3
+	github.com/kdnetwork/code-snippet/go v0.0.0-20260114163907-e19bb5d455ce
+	github.com/kdnetwork/message-transfer-core v0.0.4
 	github.com/labstack/echo/v4 v4.15.0
 	github.com/lesismal/nbio v1.6.8
 	gorm.io/gorm v1.31.1
