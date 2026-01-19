@@ -157,20 +157,14 @@ func ApiV2Push(c echo.Context) error {
 			}
 		} else if ttl > 0 {
 			return CacheMessage(c, payload, int64(ttl), token)
-		} else {
-			return c.JSON(http.StatusCreated, ApiTemplate(404, "Conn lost", false, "push_v2"))
 		}
 
-		// if err := cc.Value().WsConn.WriteMessage(websocket.TextMessage, jsonPayload); err != nil {
-		// 	return c.JSON(http.StatusInternalServerError, ApiTemplate(500, "Failed", payload, "push"))
-		// } else {
-		return c.JSON(http.StatusCreated, ApiTemplate(201, "OK", true, "push_v2"))
-		// }
+		return c.JSON(http.StatusInternalServerError, ApiTemplate(500, "Failed", true, "push_v2"))
 	} else if ttl > 0 {
 		return CacheMessage(c, payload, int64(ttl), token)
 	}
 
-	return c.JSON(http.StatusAccepted, ApiTemplate(200, "No conn", true, "push_v2"))
+	return c.JSON(http.StatusOK, ApiTemplate(404, "No conn & ttl", true, "push_v2"))
 }
 
 func CacheMessage(c echo.Context, payload *PushBody, ttl int64, token string) error {
