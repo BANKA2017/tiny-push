@@ -16,6 +16,7 @@ import (
 	"github.com/BANKA2017/tiny-push/model"
 	"github.com/BANKA2017/tiny-push/share"
 	"github.com/golang-jwt/jwt"
+	"github.com/kdnetwork/code-snippet/go/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -92,7 +93,8 @@ func ApiV2Push(c echo.Context) error {
 
 	/// TODO ignore authorization now
 	var jwt_ = ""
-	if encoding == "aes128gcm" {
+	switch encoding {
+	case "aes128gcm":
 		splitedAuthorization := strings.Split(strings.TrimPrefix(pushHeader.Authorization, "vapid "), ",")
 		authorizationMap := make(map[string]string, 2)
 		for _, v := range splitedAuthorization {
@@ -102,7 +104,7 @@ func ApiV2Push(c echo.Context) error {
 
 		jwt_ = authorizationMap["t"]
 		// publicKey := authorizationMap["k"]
-	} else if encoding == "aesgcm" {
+	case "aesgcm":
 		jwt_ = strings.TrimPrefix(pushHeader.Authorization, "WebPush ")
 	}
 
@@ -116,7 +118,7 @@ func ApiV2Push(c echo.Context) error {
 
 	// set ttl
 	// one day
-	ttl := min(max(0, pushHeader.TTL), share.V2MaximumTTL)
+	ttl := utils.Clamp(pushHeader.TTL, 0, share.V2MaximumTTL)
 
 	// log.Println(t, err)
 
@@ -155,6 +157,7 @@ func ApiV2Push(c echo.Context) error {
 					Body: payload,
 				}
 			}
+			return c.JSON(http.StatusOK, ApiTemplate(200, "OK", true, "push_v2"))
 		} else if ttl > 0 {
 			return CacheMessage(c, payload, int64(ttl), token)
 		}

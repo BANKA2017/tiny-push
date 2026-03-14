@@ -14,7 +14,7 @@ type _ApiTemplate struct {
 }
 
 var EchoEmptyObject = make(map[string]any, 0)
-var EchoEmptyArray = make([]string, 0)
+var EchoEmptyArray = make([]struct{}, 0)
 
 func ApiTemplate[T any](code int, message string, data T, version string) _ApiTemplate {
 	return _ApiTemplate{

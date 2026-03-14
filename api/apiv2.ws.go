@@ -134,14 +134,13 @@ func ApiV2WsPush(c echo.Context) error {
 		}
 	}
 
-	ctx := context.WithValue(context.Background(), "mtc-store", map[string]string{
-		"node_id":   token,
-		"conn_type": "push_v2",
-
-		"push_channel": strings.Join(newChannel, ","),
-	})
-
-	if err := WsCore.WebsocketServer(ctx, c.Response().Writer, c.Request()); err != nil {
+	if _, err := WsCore.WebsocketServer(c.Response().Writer, c.Request(), &mtcws.WsConnConfigExt{
+		ConnType: "push_v2",
+		NodeID:   token,
+		Store: map[string]string{
+			"push_channel": strings.Join(newChannel, ","),
+		},
+	}); err != nil {
 		log.Println(err)
 		return c.String(http.StatusInternalServerError, "")
 	}
