@@ -7,12 +7,11 @@ import (
 	"github.com/BANKA2017/tiny-push/assets"
 	"github.com/BANKA2017/tiny-push/share"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 func Api() {
 	e := echo.New()
-	e.Pre(middleware.RemoveTrailingSlash())
+	// e.Pre(middleware.RemoveTrailingSlash())
 	//e.Use(middleware.Logger())
 	e.Use(SetHeaders)
 
