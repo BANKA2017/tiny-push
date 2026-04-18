@@ -835,6 +835,7 @@
                         reg.pushManager.getSubscription().then((subscription) => {
                             if (!subscription) {
                                 this.pushStatus = 'default'
+                                this.uuid = ''
                             }
                         })
                     })
@@ -891,9 +892,13 @@
                         reg.pushManager
                             .getSubscription()
                             .then((subscription) => {
-                                subscription.unsubscribe().then((successful) => {
-                                    //?
-                                })
+                                // !subscription means user has not subscribed
+                                if (subscription) {
+                                    subscription.unsubscribe().then((successful) => {
+                                        //?
+                                    })
+                                }
+
                                 if (this.uuid) {
                                     fetch(endpoint + '/api/subscribe/' + this.uuid, {
                                         headers: {
