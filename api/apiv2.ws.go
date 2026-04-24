@@ -13,7 +13,6 @@ import (
 
 	"github.com/BANKA2017/tiny-push/functions"
 	"github.com/BANKA2017/tiny-push/model"
-	"github.com/BANKA2017/tiny-push/share"
 	mtcws "github.com/kdnetwork/message-transfer-core/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/lesismal/nbio/nbhttp/websocket"
@@ -37,8 +36,8 @@ func InitWsCore() {
 		// load messages from db
 		now := time.Now().Unix()
 
-		var messages = []*model.V2MessageCache{}
-		if err := functions.GormDB.R.Model(&model.V2MessageCache{}).Where("uaid = ?", w.ID).Order("mid DESC").Limit(share.V2CacheSize).Find(&messages).Error; err != nil {
+		messages, err := GetCache(w.ID)
+		if err != nil {
 			return err
 		}
 
@@ -46,10 +45,6 @@ func InitWsCore() {
 			if message.ExpiredAt > now {
 				if err := w.SendWebsocketMessage([]byte(message.Message)); err != nil {
 					log.Println(err)
-				} else {
-					if err := functions.GormDB.R.Model(&model.V2MessageCache{}).Where("mid = ?", message.Mid).Delete(&model.V2MessageCache{}).Error; err != nil {
-						log.Println(err)
-					}
 				}
 			}
 		}
@@ -77,6 +72,37 @@ func InitWsCore() {
 
 		return w.Conn.WriteMessage(websocket.TextMessage, binBody)
 	}
+
+	WsCore.OnMessage = func(w *mtcws.WsConnContext, msg []byte) ([]byte, error) {
+		if len(msg) == 0 {
+			return []byte{}, nil
+		}
+
+		var ack PushAck
+		if err := functions.JsonDecode(msg, &ack); err != nil {
+			log.Println("invalid ack message:", string(msg))
+			return []byte{}, nil
+		}
+
+		msgVersions := []string{}
+		for _, m := range ack.Messages {
+			msgVersions = append(msgVersions, m.Version)
+		}
+
+		functions.GormDB.R.Model(&model.V2MessageCache{}).Where("uaid = ? AND version IN ?", w.ID, msgVersions).Update("expired_at", 0)
+
+		return []byte{}, nil
+	}
+}
+
+type PushAck struct {
+	MessageType string           `json:"message_type"`
+	Messages    []PushAckMessage `json:"messages"`
+}
+
+type PushAckMessage struct {
+	ChannelID string `json:"channel_id"`
+	Version   string `json:"version"`
 }
 
 // like autopush

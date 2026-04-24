@@ -27,6 +27,8 @@ func Api() {
 	apiv2.GET("/ws/:token", ApiV2WsPush)
 	apiv2.POST("/push/:token/:channel", ApiV2Push)
 	apiv2.POST("/push/:token", ApiV2Push)
+	apiv2.GET("/cache/:token", ApiV2GetCache)
+	apiv2.DELETE("/cache/:token/:version", ApiV2DeleteCache)
 
 	if share.TestMode {
 		e.Static("/*", "assets/fe")

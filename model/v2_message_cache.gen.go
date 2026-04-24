@@ -9,7 +9,9 @@ const TableNameV2MessageCache = "v2_message_cache"
 // V2MessageCache mapped from table <v2_message_cache>
 type V2MessageCache struct {
 	Mid       int64  `gorm:"column:mid;type:INTEGER;primaryKey;index:idx_v2_message_cache_uaid_mid_desc,priority:2" json:"mid"`
-	Uaid      string `gorm:"column:uaid;type:TEXT;not null;index:idx_v2_message_cache_uaid_mid_desc,priority:1" json:"uaid"`
+	Uaid      string `gorm:"column:uaid;type:TEXT;not null;index:idx_v2_message_cache_uaid_version,priority:1;index:idx_v2_message_cache_uaid_mid_desc,priority:1" json:"uaid"`
+	ChannelID string `gorm:"column:channel_id;type:TEXT" json:"channel_id"`
+	Version   string `gorm:"column:version;type:TEXT;index:idx_v2_message_cache_uaid_version,priority:2" json:"version"`
 	Message   string `gorm:"column:message;type:TEXT;not null" json:"message"`
 	ExpiredAt int64  `gorm:"column:expired_at;type:INTEGER;not null;index:idx_v2_expired_at,priority:1" json:"expired_at"`
 }

@@ -183,10 +183,57 @@ func CacheMessage(c echo.Context, payload *PushBody, ttl int64, token string) er
 		Uaid:      token,
 		Message:   string(message),
 		ExpiredAt: time.Now().Unix() + int64(ttl),
+
+		Version:   payload.Version,
+		ChannelID: payload.ChannelID,
 	}).Error; err != nil {
 		log.Println(err)
 		return c.JSON(http.StatusAccepted, ApiTemplate(500, "Save message failed", true, "push_v2"))
 	}
 
 	return c.JSON(http.StatusAccepted, ApiTemplate(200, "Cached", true, "push_v2"))
+}
+
+func GetCache(uaid string) ([]*model.V2MessageCache, error) {
+	var messages = []*model.V2MessageCache{}
+	err := functions.GormDB.R.Model(&model.V2MessageCache{}).Where("uaid = ?", uaid).Order("mid DESC").Limit(share.V2CacheSize).Find(&messages).Error
+	return messages, err
+}
+
+func ApiV2GetCache(c echo.Context) error {
+	uaid := c.Param("token")
+
+	messages, err := GetCache(uaid)
+	if err != nil {
+		log.Println(err)
+		return c.JSON(http.StatusOK, ApiTemplate(500, "Failed", EchoEmptyArray, "push_v2"))
+	}
+
+	now := time.Now().Unix()
+	resMessages := make([]*PushBody, 0, len(messages))
+	for _, message := range messages {
+		if message.ExpiredAt > now {
+			var p PushBody
+			err := functions.JsonDecode([]byte(message.Message), &p)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			resMessages = append(resMessages, &p)
+		}
+	}
+
+	return c.JSON(http.StatusOK, ApiTemplate(200, "OK", resMessages, "push_v2"))
+}
+
+func ApiV2DeleteCache(c echo.Context) error {
+	uaid := c.Param("token")
+	version := c.Param("version")
+
+	if err := functions.GormDB.R.Where("uaid = ? AND version = ?", uaid, version).Delete(&model.V2MessageCache{}).Error; err != nil {
+		log.Println(err)
+		return c.JSON(http.StatusOK, ApiTemplate(500, "Failed", false, "push_v2"))
+	}
+
+	return c.JSON(http.StatusOK, ApiTemplate(200, "OK", true, "push_v2"))
 }
