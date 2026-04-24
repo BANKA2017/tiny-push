@@ -967,7 +967,7 @@
                     }
                     return btoa(binary)
                 },
-                sendPush: function () {
+                sendPush: async function () {
                     if (!this.uuid) {
                         return
                     }
@@ -976,15 +976,44 @@
                     let fetchHandle = null
 
                     if (this.route[0] === 'v2') {
+                        // encrypt?
+
+                        let msg = this.push_message
+                        let headers = {
+                            'Content-Encoding': 'none',
+                        }
+
+
+                        if (this.wsConn.key && this.wsConn.auth) {
+                            try {
+                                const priv_key = await importECCKey(this.wsConn.key)
+                                const public_key = base64_to_base64url(buffer_to_base64((await this.wsConn.getKeys()).public_key))
+                                const auth = this.wsConn.auth
+
+                                const { nonce: nonce, cek: cek, content: content } = await getAESGCMNonceAndCekAndContent(public_key, auth, priv_key, auth, (await this.wsConn.getKeys()).public_key)
+
+                                msg = (await encrypt(nonce, cek, new TextEncoder().encode(this.push_message), 0, 'aesgcm')).data
+
+                                headers['Content-Encoding'] = 'aesgcm'
+                                headers["Authorization"] = 'WebPush tiny-push-v2-web'
+
+                                headers["Crypto-Key"] = `dh=${base64_to_base64url(buffer_to_base64((await this.wsConn.getKeys()).public_key))};p256ecdsa=tiny-push-v2-web-not-yet-support-authorization`
+                                headers["Encryption"] = 'salt=' + this.wsConn.auth
+                            } catch (e) {
+                                console.error(e)
+                            }
+                        }
+
                         fetchHandle = fetch(endpoint + '/api/v2/push/' + this.uuid, {
                             headers: {
-                                'Content-Length': this.push_message.length,
+                                'Content-Length': msg.length,
                                 'Content-Type': "application/octet-stream",
-                                'Content-Encoding': 'none',
-                                TTL: this.v2ttl || 0
+                                TTL: this.v2ttl || 0,
+
+                                ...headers
                             },
                             method: 'POST',
-                            body: this.push_message
+                            body: msg
                         })
                     } else {
                         fetchHandle = fetch(endpoint + '/api/push/' + this.uuid, {
