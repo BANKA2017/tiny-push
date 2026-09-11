@@ -8,11 +8,11 @@ import (
 	"github.com/BANKA2017/tiny-push/functions"
 	"github.com/BANKA2017/tiny-push/model"
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"gorm.io/gorm"
 )
 
-func ApiSubscribe(c echo.Context) error {
+func ApiSubscribe(c *echo.Context) error {
 	uuidObject := struct {
 		UUID string `json:"uuid"`
 	}{}
@@ -57,7 +57,7 @@ func ApiSubscribe(c echo.Context) error {
 	return c.JSON(http.StatusOK, ApiTemplate(200, "OK", uuidObject, "push"))
 }
 
-func ApiDeleteSubscribe(c echo.Context) error {
+func ApiDeleteSubscribe(c *echo.Context) error {
 	_uuid := c.Param("uuid")
 	if uuid.Validate(_uuid) != nil {
 		return c.JSON(http.StatusOK, ApiTemplate(400, "Invalid UUID", false, "push"))

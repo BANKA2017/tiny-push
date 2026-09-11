@@ -17,7 +17,7 @@ import (
 	"github.com/BANKA2017/tiny-push/share"
 	"github.com/golang-jwt/jwt"
 	"github.com/kdnetwork/code-snippet/go/utils"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type PushHeader struct {
@@ -55,9 +55,9 @@ func EncodePushHeaderKV(_map map[string]string) string {
 
 var PushQueue = make(chan PushQueueItem, 1000)
 
-func ApiV2Push(c echo.Context) error {
-	pushHeader := new(PushHeader)
-	if err := (&echo.DefaultBinder{}).BindHeaders(c, pushHeader); err != nil {
+func ApiV2Push(c *echo.Context) error {
+	var pushHeader PushHeader
+	if err := echo.BindHeaders(c, &pushHeader); err != nil {
 		log.Println(err)
 		return c.JSON(http.StatusBadRequest, ApiTemplate(400, "Invalid request", false, "push_v2"))
 	}
@@ -170,7 +170,7 @@ func ApiV2Push(c echo.Context) error {
 	return c.JSON(http.StatusOK, ApiTemplate(404, "No conn & ttl", true, "push_v2"))
 }
 
-func CacheMessage(c echo.Context, payload *PushBody, ttl int64, token string) error {
+func CacheMessage(c *echo.Context, payload *PushBody, ttl int64, token string) error {
 	if !slices.Contains([]string{"aesgcm", "aes128gcm"}, payload.Headers.Encoding) {
 		return c.JSON(http.StatusBadRequest, ApiTemplate(400, "Plaintext message is not allow", false, "push_v2"))
 	}
@@ -195,12 +195,12 @@ func CacheMessage(c echo.Context, payload *PushBody, ttl int64, token string) er
 }
 
 func GetCache(uaid string) ([]*model.V2MessageCache, error) {
-	var messages = []*model.V2MessageCache{}
+	var messages []*model.V2MessageCache
 	err := functions.GormDB.R.Model(&model.V2MessageCache{}).Where("uaid = ?", uaid).Order("mid DESC").Limit(share.V2CacheSize).Find(&messages).Error
 	return messages, err
 }
 
-func ApiV2GetCache(c echo.Context) error {
+func ApiV2GetCache(c *echo.Context) error {
 	uaid := c.Param("token")
 
 	messages, err := GetCache(uaid)
@@ -226,7 +226,7 @@ func ApiV2GetCache(c echo.Context) error {
 	return c.JSON(http.StatusOK, ApiTemplate(200, "OK", resMessages, "push_v2"))
 }
 
-func ApiV2DeleteCache(c echo.Context) error {
+func ApiV2DeleteCache(c *echo.Context) error {
 	uaid := c.Param("token")
 	version := c.Param("version")
 

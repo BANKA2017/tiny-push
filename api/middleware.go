@@ -1,9 +1,9 @@
 package api
 
-import "github.com/labstack/echo/v4"
+import "github.com/labstack/echo/v5"
 
 func SetHeaders(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		c.Response().Header().Add("X-Powered-By", "tiny@push")
 		c.Response().Header().Add("Access-Control-Allow-Methods", "*")
 		return next(c)

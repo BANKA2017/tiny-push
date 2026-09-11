@@ -13,7 +13,7 @@ import (
 	"github.com/BANKA2017/tiny-push/functions"
 	"github.com/BANKA2017/tiny-push/model"
 	mtcws "github.com/kdnetwork/message-transfer-core/websocket"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/lesismal/nbio/nbhttp/websocket"
 )
 
@@ -135,7 +135,7 @@ func PushBroadcast(message []byte) error {
 	return nil
 }
 
-func ApiV2WsPush(c echo.Context) error {
+func ApiV2WsPush(c *echo.Context) error {
 	token := c.Param("token")
 
 	if token == "" {
@@ -158,7 +158,7 @@ func ApiV2WsPush(c echo.Context) error {
 		}
 	}
 
-	if _, err := WsCore.WebsocketServer(c.Response().Writer, c.Request(), &mtcws.WsConnConfigExt{
+	if _, err := WsCore.WebsocketServer(c.Response(), c.Request(), &mtcws.WsConnConfigExt{
 		ConnType: "push_v2",
 		NodeID:   token,
 		Store: map[string]string{

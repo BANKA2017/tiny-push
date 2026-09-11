@@ -16,10 +16,10 @@ import (
 	"github.com/BANKA2017/tiny-push/functions"
 	"github.com/BANKA2017/tiny-push/share"
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
-func ApiPush(c echo.Context) error {
+func ApiPush(c *echo.Context) error {
 	now := time.Now()
 
 	_uuid := c.Param("uuid")

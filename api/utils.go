@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type _ApiTemplate struct {
@@ -25,10 +25,10 @@ func ApiTemplate[T any](code int, message string, data T, version string) _ApiTe
 	}
 }
 
-func EchoReject(c echo.Context) error {
+func EchoReject(c *echo.Context) error {
 	return c.JSON(http.StatusForbidden, ApiTemplate(403, "Invalid request", EchoEmptyObject, "push"))
 }
 
-func EchoNoContent(c echo.Context) error {
+func EchoNoContent(c *echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
