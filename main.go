@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -66,7 +65,7 @@ func main() {
 				functions.GormDB.W.Where("expired_at <= ?", time.Now().Unix()).Delete(&model.V2MessageCache{})
 				api.WsCore.WebsocketConnPool.DeleteExpired()
 			case q := <-api.PushQueue:
-				jsonPayload, _ := json.Marshal(q.Body)
+				jsonPayload, _ := functions.JsonEncode(q.Body)
 				if err = q.Conn.SendWebsocketMessage(jsonPayload); err != nil {
 					log.Println(err)
 				}

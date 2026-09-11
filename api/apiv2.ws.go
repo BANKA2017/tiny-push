@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -68,7 +67,7 @@ func InitWsCore() {
 			Data:        w.Store["disconnect_reason"],
 		}
 
-		binBody, _ := json.Marshal(body)
+		binBody, _ := functions.JsonEncode(body)
 
 		return w.Conn.WriteMessage(websocket.TextMessage, binBody)
 	}
